@@ -29,6 +29,12 @@ object WhatsAppHelper {
     fun getDefaultOverdueReminderTemplate(): String =
         "Hi {tenantName},\n\nYour rent payment is overdue. Pending balance: {pendingBalance}\n\nPlease clear the dues at the earliest.\n\nThank you! \uD83C\uDFE0"
 
+    fun getDefaultElectricityReminderTemplate(): String =
+        "Hi {tenantName},\n\nYour electricity bill for {month} is {amount} ({units} units).\n\nPlease pay along with the rent.\n\nThank you! ⚡"
+
+    fun getDefaultCombinedReminderTemplate(): String =
+        "Hi {tenantName},\n\nYour total dues for {month} are {totalAmount}.\n\nRent: {rentAmount}\nElectricity: {electricityAmount} ({units} units)\n\nPlease make the payment.\n\nThank you! \uD83C\uDFE0⚡"
+
     fun sendCustomMessage(context: Context, phoneNumber: String, message: String) {
         openWhatsApp(context, phoneNumber, message)
     }

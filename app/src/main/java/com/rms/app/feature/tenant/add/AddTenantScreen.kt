@@ -16,6 +16,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.rms.app.core.util.DateUtils
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -255,7 +256,7 @@ fun AddTenantScreen(
                 initialSelectedDateMillis = uiState.moveInDate
             )
 
-            androidx.compose.foundation.layout.Box(modifier = Modifier.fillMaxWidth().clickable { showDatePicker = true }) {
+            Box(modifier = Modifier.fillMaxWidth().clickable { showDatePicker = true }) {
                 OutlinedTextField(
                     value = DateUtils.formatFullDate(uiState.moveInDate),
                     onValueChange = {},

@@ -1,5 +1,6 @@
 package com.rms.app.feature.tenant.detail
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -517,6 +518,7 @@ private fun DocumentsTab(
     documents: List<com.rms.app.core.model.entities.Document>,
     onDelete: (com.rms.app.core.model.entities.Document) -> Unit
 ) {
+    val context = LocalContext.current
     var showDeleteConfirm by remember { mutableStateOf<com.rms.app.core.model.entities.Document?>(null) }
 
     if (showDeleteConfirm != null) {
@@ -556,7 +558,7 @@ private fun DocumentsTab(
                             if (doc.fileUri.isNotBlank()) context.contentResolver.getType(android.net.Uri.parse(doc.fileUri)) else null
                         } catch (e: Exception) { null }
 
-                        if (mimeType?.startsWith("image/") == true) {
+                        if (mimeType != null && mimeType.startsWith("image/")) {
                             coil.compose.AsyncImage(
                                 model = doc.fileUri,
                                 contentDescription = doc.name,
