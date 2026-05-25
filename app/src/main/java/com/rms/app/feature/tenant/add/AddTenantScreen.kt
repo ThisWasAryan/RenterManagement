@@ -224,31 +224,16 @@ fun AddTenantScreen(
                 )
             }
 
-            Row(
+            OutlinedTextField(
+                value = uiState.monthlyRent,
+                onValueChange = viewModel::onMonthlyRentChange,
+                label = { Text("Monthly Rent *") },
+                prefix = { Text("₹") },
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                OutlinedTextField(
-                    value = uiState.monthlyRent,
-                    onValueChange = viewModel::onMonthlyRentChange,
-                    label = { Text("Monthly Rent *") },
-                    prefix = { Text("₹") },
-                    modifier = Modifier.weight(1f),
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    shape = MaterialTheme.shapes.medium
-                )
-                OutlinedTextField(
-                    value = uiState.rentDueDay,
-                    onValueChange = viewModel::onRentDueDayChange,
-                    label = { Text("Due Day") },
-                    modifier = Modifier.weight(0.6f),
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    shape = MaterialTheme.shapes.medium,
-                    supportingText = { Text("1-28") }
-                )
-            }
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                shape = MaterialTheme.shapes.medium
+            )
 
             // Move-in Date picker
             var showDatePicker by remember { mutableStateOf(false) }

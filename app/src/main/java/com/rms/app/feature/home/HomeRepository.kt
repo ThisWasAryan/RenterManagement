@@ -26,6 +26,9 @@ class HomeRepository @Inject constructor(
 
     suspend fun getLastPayment(tenantId: Long): Payment? =
         paymentDao.getLastPayment(tenantId)
+        
+    suspend fun getRentPaymentsByTenantList(tenantId: Long): List<Payment> =
+        paymentDao.getRentPaymentsByTenantList(tenantId)
 
     fun getLastPaymentFlow(tenantId: Long): Flow<Payment?> =
         paymentDao.getLastPaymentFlow(tenantId)

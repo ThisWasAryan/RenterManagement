@@ -363,6 +363,22 @@ fun TenantDetailScreen(
                             showWhatsAppDialog = false
                         }
                     )
+                    ListItem(
+                        headlineContent = { Text("Payment Confirmation") },
+                        leadingContent = { Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = Success) },
+                        modifier = Modifier.clickable {
+                            viewModel.sendWhatsAppReminder(context, "PAYMENT_CONFIRMATION")
+                            showWhatsAppDialog = false
+                        }
+                    )
+                    ListItem(
+                        headlineContent = { Text("Custom Message") },
+                        leadingContent = { Icon(Icons.Filled.Message, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface) },
+                        modifier = Modifier.clickable {
+                            viewModel.sendWhatsAppReminder(context, "CUSTOM_MESSAGE")
+                            showWhatsAppDialog = false
+                        }
+                    )
                 }
             },
             confirmButton = {},

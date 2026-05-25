@@ -179,9 +179,10 @@ fun TenantCard(
             Spacer(modifier = Modifier.height(12.dp))
 
             // Status chips row
-            Row(
+            @OptIn(ExperimentalLayoutApi::class)
+            FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 StatusChip(
                     text = if (isPaid) "Paid" else "Due",
@@ -230,30 +231,24 @@ fun TenantCard(
                 )
             }
 
-            // WhatsApp reminder (only when due)
-            AnimatedVisibility(
-                visible = isDue,
-                enter = expandVertically(),
-                exit = shrinkVertically()
+            // WhatsApp reminder (always visible)
+            Button(
+                onClick = onWhatsAppReminder,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = WhatsAppGreen
+                )
             ) {
-                Button(
-                    onClick = onWhatsAppReminder,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 8.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = WhatsAppGreen
-                    )
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Chat,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("WhatsApp Reminder", fontWeight = FontWeight.SemiBold)
-                }
+                Icon(
+                    imageVector = Icons.Filled.Chat,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("WhatsApp Message", fontWeight = FontWeight.SemiBold)
             }
 
             // Expanded detail actions

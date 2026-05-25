@@ -224,6 +224,22 @@ fun HomeScreen(
                             showWhatsAppDialogFor = null
                         }
                     )
+                    ListItem(
+                        headlineContent = { Text("Payment Confirmation") },
+                        leadingContent = { Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = Success) },
+                        modifier = Modifier.clickable {
+                            viewModel.sendWhatsAppReminder(context, tenantId, "PAYMENT_CONFIRMATION")
+                            showWhatsAppDialogFor = null
+                        }
+                    )
+                    ListItem(
+                        headlineContent = { Text("Custom Message") },
+                        leadingContent = { Icon(Icons.Filled.Message, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface) },
+                        modifier = Modifier.clickable {
+                            viewModel.sendWhatsAppReminder(context, tenantId, "CUSTOM_MESSAGE")
+                            showWhatsAppDialogFor = null
+                        }
+                    )
                 }
             },
             confirmButton = {},

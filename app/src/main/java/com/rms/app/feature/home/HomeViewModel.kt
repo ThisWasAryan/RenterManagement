@@ -152,14 +152,49 @@ class HomeViewModel @Inject constructor(
                 else -> 0.0
             }
 
+            val payments = homeRepository.getRentPaymentsByTenantList(tenantId)
+            
+            // Calculate unpaid months
+            val moveInDate = tenant?.moveInDate ?: System.currentTimeMillis()
+            val calendar = java.util.Calendar.getInstance()
+            calendar.timeInMillis = moveInDate
+            val startMonth = calendar.get(java.util.Calendar.MONTH) + 1
+            val startYear = calendar.get(java.util.Calendar.YEAR)
+            
+            val currentMonth = DateUtils.getCurrentMonth()
+            val currentYear = DateUtils.getCurrentYear()
+            
+            val allMonths = mutableListOf<Pair<Int, Int>>()
+            var tempMonth = startMonth
+            var tempYear = startYear
+            while (tempYear < currentYear || (tempYear == currentYear && tempMonth <= currentMonth)) {
+                allMonths.add(tempMonth to tempYear)
+                tempMonth++
+                if (tempMonth > 12) {
+                    tempMonth = 1
+                    tempYear++
+                }
+            }
+            
+            // Allow next month as well
+            val nextMonth = if (currentMonth == 12) 1 else currentMonth + 1
+            val nextYear = if (currentMonth == 12) currentYear + 1 else currentYear
+            allMonths.add(nextMonth to nextYear)
+            
+            val paidMonths = payments.map { it.forMonth to it.forYear }.toSet()
+            val unpaidMonths = allMonths.filter { it !in paidMonths }.sortedWith(compareBy({ it.second }, { it.first }))
+            
+            val defaultMonth = unpaidMonths.firstOrNull() ?: (currentMonth to currentYear)
+
             _paymentData.value = RecordPaymentData(
                 tenantId = tenantId,
                 tenantName = tenant?.name ?: "",
                 roomNumber = room?.roomNumber ?: "",
                 suggestedAmount = effectiveRent,
                 amount = if (effectiveRent > 0) effectiveRent.toInt().toString() else "",
-                forMonth = DateUtils.getCurrentMonth(),
-                forYear = DateUtils.getCurrentYear()
+                forMonth = defaultMonth.first,
+                forYear = defaultMonth.second,
+                unpaidMonths = unpaidMonths
             )
             _showPaymentSheet.value = true
         }
@@ -239,17 +274,25 @@ class HomeViewModel @Inject constructor(
             val pendingElectricity = if (lastReading != null && !lastReading.isPaid) lastReading.totalAmount else 0.0
             
             val phone = tenant.whatsappNumber ?: tenant.phone
+            
+            if (templateType == "CUSTOM_MESSAGE") {
+                com.rms.app.core.util.WhatsAppHelper.sendCustomMessage(context, phone, "")
+                return@launch
+            }
+
             val template = homeRepository.getTemplate(templateType)
             val templateText = template?.messageTemplate ?: when (templateType) {
                 "RENT_REMINDER" -> com.rms.app.core.util.WhatsAppHelper.getDefaultRentReminderTemplate()
                 "ELECTRICITY_REMINDER" -> com.rms.app.core.util.WhatsAppHelper.getDefaultElectricityReminderTemplate()
                 "COMBINED_REMINDER" -> com.rms.app.core.util.WhatsAppHelper.getDefaultCombinedReminderTemplate()
+                "PAYMENT_CONFIRMATION" -> com.rms.app.core.util.WhatsAppHelper.getDefaultPaymentConfirmationTemplate()
                 else -> com.rms.app.core.util.WhatsAppHelper.getDefaultRentReminderTemplate()
             }
             
             val amountStr = when (templateType) {
                 "ELECTRICITY_REMINDER" -> com.rms.app.core.util.CurrencyUtils.formatAmountCompact(pendingElectricity)
                 "COMBINED_REMINDER" -> com.rms.app.core.util.CurrencyUtils.formatAmountCompact(pendingRent + pendingElectricity)
+                "PAYMENT_CONFIRMATION" -> com.rms.app.core.util.CurrencyUtils.formatAmountCompact(paidAmount)
                 else -> com.rms.app.core.util.CurrencyUtils.formatAmountCompact(pendingRent)
             }
 

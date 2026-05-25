@@ -9,6 +9,9 @@ interface PaymentDao {
     @Query("SELECT * FROM payments WHERE tenantId = :tenantId ORDER BY paymentDate DESC")
     fun getPaymentsByTenant(tenantId: Long): Flow<List<Payment>>
 
+    @Query("SELECT * FROM payments WHERE tenantId = :tenantId AND type = 'RENT'")
+    suspend fun getRentPaymentsByTenantList(tenantId: Long): List<Payment>
+
     @Query("SELECT * FROM payments ORDER BY paymentDate DESC")
     fun getAllPayments(): Flow<List<Payment>>
 
