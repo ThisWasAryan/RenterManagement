@@ -52,9 +52,9 @@ fun SettingsScreen(
                         }
                     }
                     Spacer(Modifier.height(12.dp))
-                    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                        com.rms.app.core.ui.theme.ThemeMode.entries.filter { it != com.rms.app.core.ui.theme.ThemeMode.SYSTEM }.forEachIndexed { index, mode ->
-                            SegmentedButton(
+                        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                            com.rms.app.core.ui.theme.ThemeMode.entries.forEachIndexed { index, mode ->
+                                SegmentedButton(
                                 selected = uiState.themeMode == mode,
                                 onClick = { viewModel.updateThemeMode(mode) },
                                 shape = SegmentedButtonDefaults.itemShape(index = index, count = 2)
