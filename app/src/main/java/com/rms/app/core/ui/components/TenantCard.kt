@@ -46,6 +46,7 @@ fun TenantCard(
     lastPayment: Payment?,
     lastReading: ElectricityReading?,
     pendingBalance: Double,
+    pendingElectricity: Double,
     onRecordRent: () -> Unit,
     onAddMeter: () -> Unit,
     onWhatsAppReminder: () -> Unit,
@@ -188,9 +189,16 @@ fun TenantCard(
                 )
                 if (pendingBalance > 0) {
                     StatusChip(
-                        text = "${CurrencyUtils.formatAmountCompact(pendingBalance)} pending",
+                        text = "${CurrencyUtils.formatAmountCompact(pendingBalance)} rent due",
                         color = Error,
                         icon = Icons.Filled.ErrorOutline
+                    )
+                }
+                if (pendingElectricity > 0) {
+                    StatusChip(
+                        text = "${CurrencyUtils.formatAmountCompact(pendingElectricity)} elec due",
+                        color = Warning,
+                        icon = Icons.Filled.ElectricBolt
                     )
                 }
             }

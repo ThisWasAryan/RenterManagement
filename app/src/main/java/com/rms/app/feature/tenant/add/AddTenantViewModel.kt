@@ -10,6 +10,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.rms.app.core.model.entities.Property
+import com.rms.app.core.database.dao.PropertyDao
 
 data class AddTenantUiState(
     // Personal
@@ -32,7 +34,11 @@ data class AddTenantUiState(
     // Other
     val notes: String = "",
     val availableRooms: List<Room> = emptyList(),
+    val availableProperties: List<Property> = emptyList(),
     val useExistingRoom: Boolean = false,
+    val selectedPropertyId: Long? = null,
+    val newPropertyName: String = "",
+    val sameAsPhone: Boolean = false,
     val isEditing: Boolean = false,
     val isSaving: Boolean = false,
     val isSaved: Boolean = false,
@@ -42,6 +48,7 @@ data class AddTenantUiState(
 @HiltViewModel
 class AddTenantViewModel @Inject constructor(
     private val tenantRepository: TenantRepository,
+    private val propertyDao: PropertyDao,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -52,7 +59,16 @@ class AddTenantViewModel @Inject constructor(
 
     init {
         loadRooms()
+        loadProperties()
         if (tenantId > 0) loadTenant()
+    }
+
+    private fun loadProperties() {
+        viewModelScope.launch {
+            propertyDao.getAllProperties().collect { props ->
+                _uiState.update { it.copy(availableProperties = props) }
+            }
+        }
     }
 
     private fun loadRooms() {
@@ -92,9 +108,27 @@ class AddTenantViewModel @Inject constructor(
     }
 
     fun onNameChange(name: String) { _uiState.update { it.copy(name = name, error = null) } }
-    fun onPhoneChange(phone: String) { _uiState.update { it.copy(phone = phone) } }
-    fun onWhatsAppChange(number: String) { _uiState.update { it.copy(whatsappNumber = number) } }
+    fun onPhoneChange(phone: String) { 
+        _uiState.update { 
+            it.copy(
+                phone = phone,
+                whatsappNumber = if (it.sameAsPhone) phone else it.whatsappNumber
+            ) 
+        } 
+    }
+    fun onWhatsAppChange(number: String) { _uiState.update { it.copy(whatsappNumber = number, sameAsPhone = false) } }
+    fun toggleSameAsPhone() {
+        _uiState.update {
+            val newSameAsPhone = !it.sameAsPhone
+            it.copy(
+                sameAsPhone = newSameAsPhone,
+                whatsappNumber = if (newSameAsPhone) it.phone else it.whatsappNumber
+            )
+        }
+    }
     fun onEmailChange(email: String) { _uiState.update { it.copy(email = email) } }
+    fun onPropertySelected(propertyId: Long?) { _uiState.update { it.copy(selectedPropertyId = propertyId) } }
+    fun onNewPropertyNameChange(name: String) { _uiState.update { it.copy(newPropertyName = name, selectedPropertyId = null) } }
     fun onRoomSelected(roomId: Long?) {
         _uiState.update {
             val room = it.availableRooms.find { r -> r.id == roomId }
@@ -130,8 +164,23 @@ class AddTenantViewModel @Inject constructor(
 
                 // If no existing room selected but room number provided, create a new room
                 if (roomId == null && state.roomNumber.isNotBlank()) {
+                    var propId = state.selectedPropertyId
+                    if (propId == null) {
+                        if (state.newPropertyName.isNotBlank()) {
+                            propId = propertyDao.insertProperty(Property(name = state.newPropertyName, address = ""))
+                        } else {
+                            // Default property if none provided
+                            val existingProps = propertyDao.getAllProperties().first()
+                            if (existingProps.isEmpty()) {
+                                propId = propertyDao.insertProperty(Property(name = "Default Property", address = ""))
+                            } else {
+                                propId = existingProps.first().id
+                            }
+                        }
+                    }
+
                     val newRoom = Room(
-                        propertyId = 1L, // Default property
+                        propertyId = propId,
                         roomNumber = state.roomNumber.trim(),
                         floor = "",
                         monthlyRent = state.monthlyRent.toDoubleOrNull() ?: 0.0,

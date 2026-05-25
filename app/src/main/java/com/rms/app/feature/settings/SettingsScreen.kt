@@ -53,11 +53,11 @@ fun SettingsScreen(
                     }
                     Spacer(Modifier.height(12.dp))
                     SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                        com.rms.app.core.ui.theme.ThemeMode.entries.forEachIndexed { index, mode ->
+                        com.rms.app.core.ui.theme.ThemeMode.entries.filter { it != com.rms.app.core.ui.theme.ThemeMode.SYSTEM }.forEachIndexed { index, mode ->
                             SegmentedButton(
                                 selected = uiState.themeMode == mode,
                                 onClick = { viewModel.updateThemeMode(mode) },
-                                shape = SegmentedButtonDefaults.itemShape(index = index, count = 3)
+                                shape = SegmentedButtonDefaults.itemShape(index = index, count = 2)
                             ) {
                                 Text(mode.name.lowercase().replaceFirstChar { it.uppercase() })
                             }
@@ -69,15 +69,7 @@ fun SettingsScreen(
 
         // Defaults
         item { SettingsSectionTitle("Defaults") }
-        item {
-            SettingsInputRow(
-                icon = Icons.Filled.CurrencyRupee,
-                title = "Default Rent Amount",
-                value = uiState.defaultRent,
-                onValueChange = viewModel::updateDefaultRent,
-                keyboardType = KeyboardType.Number
-            )
-        }
+        // Removed Default Rent Amount
         item {
             SettingsInputRow(
                 icon = Icons.Filled.ElectricBolt,

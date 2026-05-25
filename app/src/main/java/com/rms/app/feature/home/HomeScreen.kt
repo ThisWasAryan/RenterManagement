@@ -63,13 +63,7 @@ fun HomeScreen(
                         )
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        IconButton(onClick = { /* TODO: filter */ }) {
-                            Icon(
-                                Icons.Filled.FilterList,
-                                contentDescription = "Filter",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                        // Removed filter button for now
                     }
                 }
 
@@ -158,6 +152,7 @@ fun HomeScreen(
                                 lastPayment = cardData.lastPayment,
                                 lastReading = cardData.lastReading,
                                 pendingBalance = cardData.pendingBalance,
+                                pendingElectricity = cardData.pendingElectricity,
                                 onRecordRent = {
                                     viewModel.openPaymentSheet(cardData.tenantWithRoom.tenant.id)
                                 },

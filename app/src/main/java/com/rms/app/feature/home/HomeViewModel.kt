@@ -19,6 +19,7 @@ data class TenantCardData(
     val lastPayment: Payment? = null,
     val lastReading: ElectricityReading? = null,
     val pendingBalance: Double = 0.0,
+    val pendingElectricity: Double = 0.0,
     val isPaidThisMonth: Boolean = false
 )
 
@@ -89,12 +90,14 @@ class HomeViewModel @Inject constructor(
                         val isPaid = currentMonthPayment != null
                         val paidAmount = currentMonthPayment?.amount ?: 0.0
                         val pending = if (effectiveRent > 0) (effectiveRent - paidAmount).coerceAtLeast(0.0) else 0.0
+                        val pendingElectricity = if (lastReading != null && !lastReading.isPaid) lastReading.totalAmount else 0.0
 
                         TenantCardData(
                             tenantWithRoom = twr,
                             lastPayment = lastPayment,
                             lastReading = lastReading,
                             pendingBalance = pending,
+                            pendingElectricity = pendingElectricity,
                             isPaidThisMonth = isPaid && paidAmount >= effectiveRent
                         )
                     }

@@ -17,7 +17,6 @@ import javax.inject.Inject
 
 data class SettingsUiState(
     val themeMode: ThemeMode = ThemeMode.DARK,
-    val defaultRent: String = "10000",
     val electricityRate: String = "8",
     val properties: List<Property> = emptyList(),
     val rooms: List<Room> = emptyList(),
@@ -34,7 +33,6 @@ class SettingsViewModel @Inject constructor(
 ) : ViewModel() {
 
     companion object {
-        val DEFAULT_RENT_KEY = stringPreferencesKey("default_rent")
         val ELECTRICITY_RATE_KEY = stringPreferencesKey("electricity_rate")
     }
 
@@ -52,7 +50,6 @@ class SettingsViewModel @Inject constructor(
             dataStore.data.collect { prefs ->
                 _uiState.update {
                     it.copy(
-                        defaultRent = prefs[DEFAULT_RENT_KEY] ?: "10000",
                         electricityRate = prefs[ELECTRICITY_RATE_KEY] ?: "8"
                     )
                 }
@@ -87,12 +84,6 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun updateDefaultRent(rent: String) {
-        _uiState.update { it.copy(defaultRent = rent) }
-        viewModelScope.launch {
-            dataStore.edit { prefs -> prefs[DEFAULT_RENT_KEY] = rent }
-        }
-    }
 
     fun updateElectricityRate(rate: String) {
         _uiState.update { it.copy(electricityRate = rate) }

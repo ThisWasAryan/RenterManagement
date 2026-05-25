@@ -81,6 +81,21 @@ fun AddTenantScreen(
                 shape = MaterialTheme.shapes.medium
             )
 
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+            ) {
+                Checkbox(
+                    checked = uiState.sameAsPhone,
+                    onCheckedChange = { viewModel.toggleSameAsPhone() }
+                )
+                Text(
+                    text = "Same as Phone Number",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.clickable { viewModel.toggleSameAsPhone() }
+                )
+            }
+
             OutlinedTextField(
                 value = uiState.whatsappNumber,
                 onValueChange = viewModel::onWhatsAppChange,
@@ -96,7 +111,8 @@ fun AddTenantScreen(
             SectionHeader("Room & Rent")
 
             // Toggle between existing room and new room
-            if (uiState.availableRooms.isNotEmpty()) {
+            // Toggle between existing room and new room
+            if (uiState.availableRooms.isNotEmpty() || uiState.availableProperties.isNotEmpty()) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -150,7 +166,51 @@ fun AddTenantScreen(
                     }
                 }
             } else {
-                // New room — just type room number
+                // New room
+                if (uiState.availableProperties.isNotEmpty()) {
+                    var propDropdownExpanded by remember { mutableStateOf(false) }
+                    ExposedDropdownMenuBox(
+                        expanded = propDropdownExpanded,
+                        onExpandedChange = { propDropdownExpanded = it }
+                    ) {
+                        OutlinedTextField(
+                            value = uiState.availableProperties.find { it.id == uiState.selectedPropertyId }?.name ?: uiState.newPropertyName,
+                            onValueChange = viewModel::onNewPropertyNameChange,
+                            label = { Text("Property Name") },
+                            leadingIcon = { Icon(Icons.Filled.Home, null) },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = propDropdownExpanded) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .menuAnchor(),
+                            shape = MaterialTheme.shapes.medium
+                        )
+                        ExposedDropdownMenu(
+                            expanded = propDropdownExpanded,
+                            onDismissRequest = { propDropdownExpanded = false }
+                        ) {
+                            uiState.availableProperties.forEach { prop ->
+                                DropdownMenuItem(
+                                    text = { Text(prop.name) },
+                                    onClick = {
+                                        viewModel.onPropertySelected(prop.id)
+                                        propDropdownExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    OutlinedTextField(
+                        value = uiState.newPropertyName,
+                        onValueChange = viewModel::onNewPropertyNameChange,
+                        label = { Text("Property Name") },
+                        leadingIcon = { Icon(Icons.Filled.Home, null) },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        shape = MaterialTheme.shapes.medium
+                    )
+                }
+
                 OutlinedTextField(
                     value = uiState.roomNumber,
                     onValueChange = viewModel::onRoomNumberChange,

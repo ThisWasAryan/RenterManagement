@@ -138,7 +138,7 @@ fun DocumentsScreen(
             item { EmptyDocPlaceholder("No agreements uploaded") }
         } else {
             items(uiState.agreements) { doc ->
-                DocumentRow(name = doc.name, subtitle = doc.documentType, date = DateUtils.formatFullDate(doc.createdAt))
+                DocumentRow(name = doc.name, subtitle = doc.documentType, date = DateUtils.formatFullDate(doc.createdAt), fileUri = doc.fileUri)
             }
         }
 
@@ -172,7 +172,7 @@ fun DocumentsScreen(
             item { EmptyDocPlaceholder("No meter photos yet") }
         } else {
             items(uiState.meterPhotos) { doc ->
-                DocumentRow(name = doc.name, subtitle = "Meter Photo", date = DateUtils.formatFullDate(doc.createdAt))
+                DocumentRow(name = doc.name, subtitle = "Meter Photo", date = DateUtils.formatFullDate(doc.createdAt), fileUri = doc.fileUri)
             }
         }
 
@@ -182,7 +182,7 @@ fun DocumentsScreen(
                 SectionTitle(icon = Icons.Outlined.FolderOpen, title = "All Documents (${uiState.documents.size})")
             }
             items(uiState.documents) { doc ->
-                DocumentRow(name = doc.name, subtitle = doc.documentType, date = DateUtils.formatFullDate(doc.createdAt))
+                DocumentRow(name = doc.name, subtitle = doc.documentType, date = DateUtils.formatFullDate(doc.createdAt), fileUri = doc.fileUri)
             }
         }
 
@@ -279,7 +279,8 @@ private fun SectionTitle(icon: androidx.compose.ui.graphics.vector.ImageVector, 
 }
 
 @Composable
-private fun DocumentRow(name: String, subtitle: String, date: String = "") {
+private fun DocumentRow(name: String, subtitle: String, date: String = "", fileUri: String = "") {
+    val context = androidx.compose.ui.platform.LocalContext.current
     Card(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
@@ -297,7 +298,20 @@ private fun DocumentRow(name: String, subtitle: String, date: String = "") {
                     Text(date, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
-            TextButton(onClick = { }) { Text("View") }
+            if (fileUri.isNotBlank()) {
+                TextButton(onClick = {
+                    try {
+                        val uri = android.net.Uri.parse(fileUri)
+                        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                            setDataAndType(uri, "*/*")
+                            addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        }
+                        context.startActivity(android.content.Intent.createChooser(intent, "Open with"))
+                    } catch (e: Exception) {
+                        // ignore
+                    }
+                }) { Text("View") }
+            }
         }
     }
 }
