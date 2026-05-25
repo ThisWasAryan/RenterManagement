@@ -15,7 +15,8 @@ class TenantRepository @Inject constructor(
     private val electricityReadingDao: ElectricityReadingDao,
     private val documentDao: DocumentDao,
     private val expenseDao: ExpenseDao,
-    private val maintenanceLogDao: MaintenanceLogDao
+    private val maintenanceLogDao: MaintenanceLogDao,
+    private val templateDao: WhatsAppTemplateDao
 ) {
     fun getTenantWithRoom(tenantId: Long): Flow<TenantWithRoom?> =
         tenantDao.getTenantWithRoom(tenantId)
@@ -69,4 +70,14 @@ class TenantRepository @Inject constructor(
 
     suspend fun insertDocument(document: Document): Long =
         documentDao.insertDocument(document)
+        
+    suspend fun deleteDocument(document: Document) = 
+        documentDao.deleteDocument(document)
+        
+    suspend fun getTemplate(type: String): WhatsAppTemplate? =
+        templateDao.getTemplate(type)
+    
+    suspend fun deleteTenant(tenant: Tenant) {
+        tenantDao.deleteTenant(tenant)
+    }
 }

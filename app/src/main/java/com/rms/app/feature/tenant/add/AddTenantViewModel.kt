@@ -145,6 +145,7 @@ class AddTenantViewModel @Inject constructor(
     fun onRentDueDayChange(day: String) { _uiState.update { it.copy(rentDueDay = day) } }
     fun onDepositChange(deposit: String) { _uiState.update { it.copy(advanceDeposit = deposit) } }
     fun onElectricityRateChange(rate: String) { _uiState.update { it.copy(electricityRate = rate) } }
+    fun onMoveInDateSelected(date: Long) { _uiState.update { it.copy(moveInDate = date) } }
     fun onNotesChange(notes: String) { _uiState.update { it.copy(notes = notes) } }
     fun onAadhaarChange(aadhaar: String) { _uiState.update { it.copy(aadhaarNumber = aadhaar) } }
     fun onPanChange(pan: String) { _uiState.update { it.copy(panNumber = pan) } }

@@ -249,6 +249,53 @@ fun AddTenantScreen(
                 )
             }
 
+            // Move-in Date picker
+            var showDatePicker by remember { mutableStateOf(false) }
+            val datePickerState = rememberDatePickerState(
+                initialSelectedDateMillis = uiState.moveInDate
+            )
+
+            androidx.compose.foundation.layout.Box(modifier = Modifier.fillMaxWidth().clickable { showDatePicker = true }) {
+                OutlinedTextField(
+                    value = DateUtils.formatFullDate(uiState.moveInDate),
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Move-in Date") },
+                    leadingIcon = { Icon(Icons.Filled.CalendarToday, null) },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = false,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                        disabledBorderColor = MaterialTheme.colorScheme.outline,
+                        disabledLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                )
+            }
+
+            if (showDatePicker) {
+                DatePickerDialog(
+                    onDismissRequest = { showDatePicker = false },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            datePickerState.selectedDateMillis?.let {
+                                viewModel.onMoveInDateSelected(it)
+                            }
+                            showDatePicker = false
+                        }) {
+                            Text("OK")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showDatePicker = false }) {
+                            Text("Cancel")
+                        }
+                    }
+                ) {
+                    DatePicker(state = datePickerState)
+                }
+            }
+
             OutlinedTextField(
                 value = uiState.advanceDeposit,
                 onValueChange = viewModel::onDepositChange,

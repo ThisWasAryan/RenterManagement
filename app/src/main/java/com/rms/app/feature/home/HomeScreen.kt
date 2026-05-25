@@ -36,6 +36,7 @@ fun HomeScreen(
     val showPaymentSheet by viewModel.showPaymentSheet.collectAsStateWithLifecycle()
     val paymentData by viewModel.paymentData.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    var showWhatsAppDialogFor by remember { mutableStateOf<Long?>(null) }
 
     Scaffold(
         topBar = {
@@ -160,7 +161,7 @@ fun HomeScreen(
                                     onNavigateToAddReading(cardData.tenantWithRoom.tenant.id)
                                 },
                                 onWhatsAppReminder = {
-                                    viewModel.sendWhatsAppReminder(context, cardData.tenantWithRoom.tenant.id)
+                                    showWhatsAppDialogFor = cardData.tenantWithRoom.tenant.id
                                 },
                                 onViewDetails = {
                                     onNavigateToTenantDetail(cardData.tenantWithRoom.tenant.id)
@@ -188,6 +189,48 @@ fun HomeScreen(
             onNotesChange = viewModel::onPaymentNotesChange,
             onSave = viewModel::savePayment,
             onDismiss = viewModel::dismissPaymentSheet
+        )
+    }
+
+    if (showWhatsAppDialogFor != null) {
+        val tenantId = showWhatsAppDialogFor!!
+        AlertDialog(
+            onDismissRequest = { showWhatsAppDialogFor = null },
+            title = { Text("Send WhatsApp Reminder") },
+            text = {
+                Column {
+                    ListItem(
+                        headlineContent = { Text("Rent Reminder") },
+                        leadingContent = { Icon(Icons.Filled.Payment, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                        modifier = Modifier.clickable {
+                            viewModel.sendWhatsAppReminder(context, tenantId, "RENT_REMINDER")
+                            showWhatsAppDialogFor = null
+                        }
+                    )
+                    ListItem(
+                        headlineContent = { Text("Electricity Reminder") },
+                        leadingContent = { Icon(Icons.Filled.ElectricBolt, contentDescription = null, tint = Warning) },
+                        modifier = Modifier.clickable {
+                            viewModel.sendWhatsAppReminder(context, tenantId, "ELECTRICITY_REMINDER")
+                            showWhatsAppDialogFor = null
+                        }
+                    )
+                    ListItem(
+                        headlineContent = { Text("Combined Reminder") },
+                        leadingContent = { Icon(Icons.Filled.ReceiptLong, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary) },
+                        modifier = Modifier.clickable {
+                            viewModel.sendWhatsAppReminder(context, tenantId, "COMBINED_REMINDER")
+                            showWhatsAppDialogFor = null
+                        }
+                    )
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showWhatsAppDialogFor = null }) {
+                    Text("Cancel")
+                }
+            }
         )
     }
 }

@@ -172,7 +172,7 @@ fun TenantCard(
                 )
                 InfoColumn(
                     label = "Meter Reading",
-                    value = if (lastReading != null) "${lastReading.currentReading.toInt()} units" else "—"
+                    value = if (lastReading != null) "${lastReading.previousReading.toInt()} -> ${lastReading.currentReading.toInt()} (${lastReading.unitsConsumed.toInt()} u)" else "—"
                 )
             }
 
@@ -198,6 +198,12 @@ fun TenantCard(
                     StatusChip(
                         text = "${CurrencyUtils.formatAmountCompact(pendingElectricity)} elec due",
                         color = Warning,
+                        icon = Icons.Filled.ElectricBolt
+                    )
+                } else if (lastReading != null && lastReading.isPaid) {
+                    StatusChip(
+                        text = "Elec Paid",
+                        color = Success,
                         icon = Icons.Filled.ElectricBolt
                     )
                 }

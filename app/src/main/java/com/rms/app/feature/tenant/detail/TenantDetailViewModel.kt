@@ -29,7 +29,13 @@ data class TenantDetailUiState(
     // Electricity payment dialog
     val showElectricityPayDialog: Boolean = false,
     val selectedReadingId: Long = 0,
-    val electricityPayMode: PaymentMode = PaymentMode.CASH
+    val electricityPayMode: PaymentMode = PaymentMode.CASH,
+    // Delete tenant
+    val showDeleteDialog: Boolean = false,
+    val isDeleted: Boolean = false,
+    // Electricity Detail
+    val showElectricityDetailDialog: Boolean = false,
+    val selectedElectricityReading: ElectricityReading? = null
 )
 
 @HiltViewModel
@@ -93,6 +99,21 @@ class TenantDetailViewModel @Inject constructor(
     fun deactivateTenant() {
         viewModelScope.launch {
             tenantRepository.deactivateTenant(tenantId)
+        }
+    }
+
+    fun showDeleteDialog() { _uiState.update { it.copy(showDeleteDialog = true) } }
+    fun dismissDeleteDialog() { _uiState.update { it.copy(showDeleteDialog = false) } }
+
+    fun deleteTenant() {
+        viewModelScope.launch {
+            val tenant = _uiState.value.tenantWithRoom?.tenant ?: return@launch
+            try {
+                tenantRepository.deleteTenant(tenant)
+                _uiState.update { it.copy(showDeleteDialog = false, isDeleted = true) }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(showDeleteDialog = false, error = e.message) }
+            }
         }
     }
 
@@ -198,6 +219,73 @@ class TenantDetailViewModel @Inject constructor(
             try {
                 tenantRepository.markElectricityPaid(readingId, System.currentTimeMillis(), mode.name)
                 _uiState.update { it.copy(showElectricityPayDialog = false, selectedReadingId = 0) }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(error = e.message) }
+            }
+        }
+    }
+
+    fun showElectricityDetail(reading: ElectricityReading) {
+        _uiState.update { it.copy(showElectricityDetailDialog = true, selectedElectricityReading = reading) }
+    }
+    
+    fun dismissElectricityDetail() {
+        _uiState.update { it.copy(showElectricityDetailDialog = false, selectedElectricityReading = null) }
+    }
+
+    fun sendWhatsAppReminder(context: android.content.Context, templateType: String) {
+        viewModelScope.launch {
+            val twr = _uiState.value.tenantWithRoom ?: return@launch
+            val tenant = twr.tenant
+            val room = twr.room
+            
+            // Assume we can compute the due amounts by taking all readings and payments
+            // Since we need pending, we might just calculate it
+            val lastReading = _uiState.value.electricityReadings.maxByOrNull { it.readingDate }
+            val currentMonthPayment = _uiState.value.payments.find { 
+                it.forMonth == DateUtils.getCurrentMonth() && it.forYear == DateUtils.getCurrentYear() 
+            }
+            
+            val effectiveRent = when {
+                tenant.monthlyRent > 0 -> tenant.monthlyRent
+                room?.monthlyRent ?: 0.0 > 0.0 -> room?.monthlyRent ?: 0.0
+                else -> 0.0
+            }
+            
+            val paidAmount = currentMonthPayment?.amount ?: 0.0
+            val pendingRent = if (effectiveRent > 0) (effectiveRent - paidAmount).coerceAtLeast(0.0) else 0.0
+            val pendingElectricity = if (lastReading != null && !lastReading.isPaid) lastReading.totalAmount else 0.0
+            
+            val phone = tenant.whatsappNumber ?: tenant.phone
+            val template = tenantRepository.getTemplate(templateType)
+            val templateText = template?.messageTemplate ?: when (templateType) {
+                "RENT_REMINDER" -> com.rms.app.core.util.WhatsAppHelper.getDefaultRentReminderTemplate()
+                "ELECTRICITY_REMINDER" -> com.rms.app.core.util.WhatsAppHelper.getDefaultElectricityReminderTemplate()
+                "COMBINED_REMINDER" -> com.rms.app.core.util.WhatsAppHelper.getDefaultCombinedReminderTemplate()
+                else -> com.rms.app.core.util.WhatsAppHelper.getDefaultRentReminderTemplate()
+            }
+            
+            val amountStr = when (templateType) {
+                "ELECTRICITY_REMINDER" -> com.rms.app.core.util.CurrencyUtils.formatAmountCompact(pendingElectricity)
+                "COMBINED_REMINDER" -> com.rms.app.core.util.CurrencyUtils.formatAmountCompact(pendingRent + pendingElectricity)
+                else -> com.rms.app.core.util.CurrencyUtils.formatAmountCompact(pendingRent)
+            }
+
+            val args = mapOf(
+                "tenantName" to tenant.name,
+                "amount" to amountStr,
+                "month" to DateUtils.formatMonthYear(DateUtils.getCurrentMonth(), DateUtils.getCurrentYear())
+            )
+            
+            com.rms.app.core.util.WhatsAppHelper.formatAndSendMessage(context, phone, templateText, args)
+        }
+    }
+
+    fun deleteDocument(document: Document) {
+        viewModelScope.launch {
+            try {
+                tenantRepository.deleteDocument(document)
+                // Reload documents is handled by the Flow in loadTenantDetails
             } catch (e: Exception) {
                 _uiState.update { it.copy(error = e.message) }
             }

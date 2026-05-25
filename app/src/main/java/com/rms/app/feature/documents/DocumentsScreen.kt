@@ -172,7 +172,13 @@ fun DocumentsScreen(
             item { EmptyDocPlaceholder("No meter photos yet") }
         } else {
             items(uiState.meterPhotos) { doc ->
-                DocumentRow(name = doc.name, subtitle = "Meter Photo", date = DateUtils.formatFullDate(doc.createdAt), fileUri = doc.fileUri)
+                DocumentRow(
+                    name = doc.name, 
+                    subtitle = "Meter Photo", 
+                    date = DateUtils.formatFullDate(doc.createdAt), 
+                    fileUri = doc.fileUri,
+                    onDelete = { viewModel.deleteDocument(doc) }
+                )
             }
         }
 
@@ -182,7 +188,13 @@ fun DocumentsScreen(
                 SectionTitle(icon = Icons.Outlined.FolderOpen, title = "All Documents (${uiState.documents.size})")
             }
             items(uiState.documents) { doc ->
-                DocumentRow(name = doc.name, subtitle = doc.documentType, date = DateUtils.formatFullDate(doc.createdAt), fileUri = doc.fileUri)
+                DocumentRow(
+                    name = doc.name, 
+                    subtitle = doc.documentType, 
+                    date = DateUtils.formatFullDate(doc.createdAt), 
+                    fileUri = doc.fileUri,
+                    onDelete = { viewModel.deleteDocument(doc) }
+                )
             }
         }
 
@@ -279,8 +291,30 @@ private fun SectionTitle(icon: androidx.compose.ui.graphics.vector.ImageVector, 
 }
 
 @Composable
-private fun DocumentRow(name: String, subtitle: String, date: String = "", fileUri: String = "") {
+private fun DocumentRow(name: String, subtitle: String, date: String = "", fileUri: String = "", onDelete: (() -> Unit)? = null) {
     val context = androidx.compose.ui.platform.LocalContext.current
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+
+    if (showDeleteConfirm && onDelete != null) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title = { Text("Delete Document") },
+            text = { Text("Are you sure you want to delete this document? This action cannot be undone.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        onDelete()
+                        showDeleteConfirm = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) { Text("Delete") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) { Text("Cancel") }
+            }
+        )
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
@@ -289,7 +323,20 @@ private fun DocumentRow(name: String, subtitle: String, date: String = "", fileU
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(Icons.Filled.Description, null, tint = MaterialTheme.colorScheme.primary)
+            val mimeType = try {
+                if (fileUri.isNotBlank()) context.contentResolver.getType(android.net.Uri.parse(fileUri)) else null
+            } catch (e: Exception) { null }
+
+            if (mimeType?.startsWith("image/") == true) {
+                coil.compose.AsyncImage(
+                    model = fileUri,
+                    contentDescription = name,
+                    modifier = Modifier.size(40.dp).clip(MaterialTheme.shapes.small),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Icon(Icons.Filled.Description, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(40.dp))
+            }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
@@ -299,18 +346,23 @@ private fun DocumentRow(name: String, subtitle: String, date: String = "", fileU
                 }
             }
             if (fileUri.isNotBlank()) {
-                TextButton(onClick = {
+                IconButton(onClick = {
                     try {
                         val uri = android.net.Uri.parse(fileUri)
                         val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
-                            setDataAndType(uri, "*/*")
+                            setDataAndType(uri, mimeType ?: "*/*")
                             addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
                         }
                         context.startActivity(android.content.Intent.createChooser(intent, "Open with"))
                     } catch (e: Exception) {
                         // ignore
                     }
-                }) { Text("View") }
+                }) { Icon(Icons.Filled.Visibility, "View", tint = MaterialTheme.colorScheme.primary) }
+            }
+            if (onDelete != null) {
+                IconButton(onClick = { showDeleteConfirm = true }) {
+                    Icon(Icons.Filled.Delete, "Delete", tint = MaterialTheme.colorScheme.error)
+                }
             }
         }
     }

@@ -222,24 +222,41 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    fun sendWhatsAppReminder(context: android.content.Context, tenantId: Long) {
+    fun sendWhatsAppReminder(context: android.content.Context, tenantId: Long, templateType: String) {
         viewModelScope.launch {
             val tenant = homeRepository.getTenantById(tenantId) ?: return@launch
             val room = tenant.roomId?.let { homeRepository.getRoomById(it) }
+            val lastReading = homeRepository.getLastReading(tenantId)
+
             val effectiveRent = when {
                 tenant.monthlyRent > 0 -> tenant.monthlyRent
                 room?.monthlyRent ?: 0.0 > 0.0 -> room?.monthlyRent ?: 0.0
                 else -> 0.0
             }
+            val currentMonthPayment = homeRepository.getPaymentForMonth(tenantId, DateUtils.getCurrentMonth(), DateUtils.getCurrentYear())
+            val paidAmount = currentMonthPayment?.amount ?: 0.0
+            val pendingRent = if (effectiveRent > 0) (effectiveRent - paidAmount).coerceAtLeast(0.0) else 0.0
+            val pendingElectricity = if (lastReading != null && !lastReading.isPaid) lastReading.totalAmount else 0.0
             
             val phone = tenant.whatsappNumber ?: tenant.phone
-            val template = homeRepository.getTemplate("RENT_REMINDER")
-            val templateText = template?.messageTemplate ?: com.rms.app.core.util.WhatsAppHelper.getDefaultRentReminderTemplate()
+            val template = homeRepository.getTemplate(templateType)
+            val templateText = template?.messageTemplate ?: when (templateType) {
+                "RENT_REMINDER" -> com.rms.app.core.util.WhatsAppHelper.getDefaultRentReminderTemplate()
+                "ELECTRICITY_REMINDER" -> com.rms.app.core.util.WhatsAppHelper.getDefaultElectricityReminderTemplate()
+                "COMBINED_REMINDER" -> com.rms.app.core.util.WhatsAppHelper.getDefaultCombinedReminderTemplate()
+                else -> com.rms.app.core.util.WhatsAppHelper.getDefaultRentReminderTemplate()
+            }
             
+            val amountStr = when (templateType) {
+                "ELECTRICITY_REMINDER" -> com.rms.app.core.util.CurrencyUtils.formatAmountCompact(pendingElectricity)
+                "COMBINED_REMINDER" -> com.rms.app.core.util.CurrencyUtils.formatAmountCompact(pendingRent + pendingElectricity)
+                else -> com.rms.app.core.util.CurrencyUtils.formatAmountCompact(pendingRent)
+            }
+
             val args = mapOf(
                 "tenantName" to tenant.name,
-                "amount" to com.rms.app.core.util.CurrencyUtils.formatAmountCompact(effectiveRent),
-                "month" to "this month"
+                "amount" to amountStr,
+                "month" to DateUtils.formatMonthYear(DateUtils.getCurrentMonth(), DateUtils.getCurrentYear())
             )
             
             com.rms.app.core.util.WhatsAppHelper.formatAndSendMessage(context, phone, templateText, args)

@@ -41,6 +41,7 @@ fun TenantDetailScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val paymentData by viewModel.paymentData.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    var showWhatsAppDialog by remember { mutableStateOf(false) }
     val tabs = listOf("Overview", "Payments", "Electricity", "Documents")
 
     Scaffold(
@@ -54,8 +55,30 @@ fun TenantDetailScreen(
                 },
                 actions = {
                     uiState.tenantWithRoom?.let { twr ->
-                        IconButton(onClick = { onEditTenant(twr.tenant.id) }) {
-                            Icon(Icons.Filled.Edit, "Edit")
+                        var showMenu by remember { mutableStateOf(false) }
+                        IconButton(onClick = { showMenu = true }) {
+                            Icon(Icons.Filled.MoreVert, "More Options")
+                        }
+                        DropdownMenu(
+                            expanded = showMenu,
+                            onDismissRequest = { showMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Edit") },
+                                leadingIcon = { Icon(Icons.Filled.Edit, null) },
+                                onClick = {
+                                    showMenu = false
+                                    onEditTenant(twr.tenant.id)
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
+                                leadingIcon = { Icon(Icons.Filled.Delete, null, tint = MaterialTheme.colorScheme.error) },
+                                onClick = {
+                                    showMenu = false
+                                    viewModel.showDeleteDialog()
+                                }
+                            )
                         }
                     }
                 },
@@ -68,6 +91,12 @@ fun TenantDetailScreen(
         if (uiState.isLoading) {
             LoadingState(modifier = Modifier.fillMaxSize().padding(padding))
             return@Scaffold
+        }
+
+        LaunchedEffect(uiState.isDeleted) {
+            if (uiState.isDeleted) {
+                onNavigateBack()
+            }
         }
 
         val twr = uiState.tenantWithRoom ?: return@Scaffold
@@ -143,7 +172,7 @@ fun TenantDetailScreen(
                     val phone = tenant.whatsappNumber ?: tenant.phone
                     if (phone.isNotBlank()) {
                         IconButton(onClick = {
-                            WhatsAppHelper.sendCustomMessage(context, phone, "Hi ${tenant.name}")
+                            showWhatsAppDialog = true
                         }) {
                             Icon(
                                 Icons.Filled.Chat,
@@ -205,9 +234,13 @@ fun TenantDetailScreen(
                 2 -> ElectricityTab(
                     readings = uiState.electricityReadings,
                     onAddReading = { onAddReading(tenant.id) },
-                    onMarkPaid = { readingId -> viewModel.showElectricityPayDialog(readingId) }
+                    onMarkPaid = { readingId -> viewModel.showElectricityPayDialog(readingId) },
+                    onReadingClick = { reading -> viewModel.showElectricityDetail(reading) }
                 )
-                3 -> DocumentsTab(uiState.documents)
+                3 -> DocumentsTab(
+                    documents = uiState.documents,
+                    onDelete = { doc -> viewModel.deleteDocument(doc) }
+                )
             }
         }
     }
@@ -261,6 +294,79 @@ fun TenantDetailScreen(
             },
             dismissButton = {
                 TextButton(onClick = { viewModel.dismissElectricityPayDialog() }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    if (uiState.showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissDeleteDialog() },
+            title = { Text("Delete Tenant") },
+            text = { Text("Are you sure you want to delete this tenant? All associated payments, electricity readings, and documents will also be deleted. This action cannot be undone.") },
+            confirmButton = {
+                Button(
+                    onClick = { viewModel.deleteTenant() },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.dismissDeleteDialog() }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    if (uiState.showElectricityDetailDialog && uiState.selectedElectricityReading != null) {
+        ElectricityDetailDialog(
+            reading = uiState.selectedElectricityReading!!,
+            onDismiss = viewModel::dismissElectricityDetail,
+            onMarkPaid = { 
+                viewModel.dismissElectricityDetail()
+                viewModel.showElectricityPayDialog(it.id)
+            }
+        )
+    }
+
+    if (showWhatsAppDialog) {
+        AlertDialog(
+            onDismissRequest = { showWhatsAppDialog = false },
+            title = { Text("Send WhatsApp Reminder") },
+            text = {
+                Column {
+                    ListItem(
+                        headlineContent = { Text("Rent Reminder") },
+                        leadingContent = { Icon(Icons.Filled.Payment, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                        modifier = Modifier.clickable {
+                            viewModel.sendWhatsAppReminder(context, "RENT_REMINDER")
+                            showWhatsAppDialog = false
+                        }
+                    )
+                    ListItem(
+                        headlineContent = { Text("Electricity Reminder") },
+                        leadingContent = { Icon(Icons.Filled.ElectricBolt, contentDescription = null, tint = Warning) },
+                        modifier = Modifier.clickable {
+                            viewModel.sendWhatsAppReminder(context, "ELECTRICITY_REMINDER")
+                            showWhatsAppDialog = false
+                        }
+                    )
+                    ListItem(
+                        headlineContent = { Text("Combined Reminder") },
+                        leadingContent = { Icon(Icons.Filled.ReceiptLong, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary) },
+                        modifier = Modifier.clickable {
+                            viewModel.sendWhatsAppReminder(context, "COMBINED_REMINDER")
+                            showWhatsAppDialog = false
+                        }
+                    )
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showWhatsAppDialog = false }) {
                     Text("Cancel")
                 }
             }
@@ -355,7 +461,8 @@ private fun PaymentsTab(payments: List<com.rms.app.core.model.entities.Payment>)
 private fun ElectricityTab(
     readings: List<com.rms.app.core.model.entities.ElectricityReading>,
     onAddReading: () -> Unit,
-    onMarkPaid: (Long) -> Unit
+    onMarkPaid: (Long) -> Unit,
+    onReadingClick: (com.rms.app.core.model.entities.ElectricityReading) -> Unit
 ) {
     if (readings.isEmpty()) {
         EmptyState(icon = Icons.Outlined.ElectricMeter, title = "No readings yet", subtitle = "Add the first meter reading", actionText = "Add Reading", onAction = onAddReading)
@@ -366,7 +473,7 @@ private fun ElectricityTab(
         ) {
             items(readings) { reading ->
                 Card(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().clickable { onReadingClick(reading) },
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
@@ -406,7 +513,32 @@ private fun ElectricityTab(
 }
 
 @Composable
-private fun DocumentsTab(documents: List<com.rms.app.core.model.entities.Document>) {
+private fun DocumentsTab(
+    documents: List<com.rms.app.core.model.entities.Document>,
+    onDelete: (com.rms.app.core.model.entities.Document) -> Unit
+) {
+    var showDeleteConfirm by remember { mutableStateOf<com.rms.app.core.model.entities.Document?>(null) }
+
+    if (showDeleteConfirm != null) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = null },
+            title = { Text("Delete Document") },
+            text = { Text("Are you sure you want to delete this document? This action cannot be undone.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        onDelete(showDeleteConfirm!!)
+                        showDeleteConfirm = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) { Text("Delete") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = null }) { Text("Cancel") }
+            }
+        )
+    }
+
     if (documents.isEmpty()) {
         EmptyState(icon = Icons.Outlined.Description, title = "No documents", subtitle = "Upload agreements, IDs, and receipts")
     } else {
@@ -420,14 +552,45 @@ private fun DocumentsTab(documents: List<com.rms.app.core.model.entities.Documen
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {
                     Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Filled.Description, null, tint = MaterialTheme.colorScheme.primary)
+                        val mimeType = try {
+                            if (doc.fileUri.isNotBlank()) context.contentResolver.getType(android.net.Uri.parse(doc.fileUri)) else null
+                        } catch (e: Exception) { null }
+
+                        if (mimeType?.startsWith("image/") == true) {
+                            coil.compose.AsyncImage(
+                                model = doc.fileUri,
+                                contentDescription = doc.name,
+                                modifier = Modifier.size(40.dp).clip(MaterialTheme.shapes.small),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Icon(Icons.Filled.Description, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(40.dp))
+                        }
                         Spacer(Modifier.width(12.dp))
                         Column(Modifier.weight(1f)) {
                             Text(doc.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
                             Text(doc.documentType, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Text(DateUtils.formatFullDate(doc.createdAt), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
-                        TextButton(onClick = { /* TODO: open document */ }) { Text("View") }
+                        val context = LocalContext.current
+                        IconButton(onClick = {
+                            if (doc.fileUri.isNotBlank()) {
+                                try {
+                                    val uri = android.net.Uri.parse(doc.fileUri)
+                                    val finalMimeType = context.contentResolver.getType(uri) ?: "*/*"
+                                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                                        setDataAndType(uri, finalMimeType)
+                                        addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                    }
+                                    context.startActivity(android.content.Intent.createChooser(intent, "Open with"))
+                                } catch (e: Exception) {
+                                    // ignore
+                                }
+                            }
+                        }) { Icon(Icons.Filled.Visibility, "View", tint = MaterialTheme.colorScheme.primary) }
+                        IconButton(onClick = { showDeleteConfirm = doc }) {
+                            Icon(Icons.Filled.Delete, "Delete", tint = MaterialTheme.colorScheme.error)
+                        }
                     }
                 }
             }
@@ -458,4 +621,62 @@ private fun DetailRow(label: String, value: String) {
         Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
     }
+}
+
+@Composable
+private fun ElectricityDetailDialog(
+    reading: com.rms.app.core.model.entities.ElectricityReading,
+    onDismiss: () -> Unit,
+    onMarkPaid: (com.rms.app.core.model.entities.ElectricityReading) -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Electricity Reading", style = MaterialTheme.typography.titleMedium) },
+        text = {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                DetailRow("Billing Month", DateUtils.formatMonthYear(reading.forMonth, reading.forYear))
+                DetailRow("Reading Date", DateUtils.formatFullDate(reading.readingDate))
+                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                DetailRow("Previous Reading", "${reading.previousReading.toInt()}")
+                DetailRow("Current Reading", "${reading.currentReading.toInt()}")
+                DetailRow("Units Consumed", "${reading.unitsConsumed.toInt()}")
+                DetailRow("Amount Due", CurrencyUtils.formatAmountCompact(reading.totalAmount))
+                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                DetailRow("Status", if (reading.isPaid) "Paid" else "Unpaid")
+                if (reading.isPaid) {
+                    DetailRow("Payment Mode", reading.paymentMode ?: "—")
+                    DetailRow("Paid On", reading.paidDate?.let { DateUtils.formatFullDate(it) } ?: "—")
+                }
+
+                if (reading.meterPhotoUri != null) {
+                    Spacer(Modifier.height(8.dp))
+                    Text("Meter Photo", style = MaterialTheme.typography.labelMedium)
+                    AsyncImage(
+                        model = reading.meterPhotoUri,
+                        contentDescription = "Meter Photo",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp)
+                            .clip(MaterialTheme.shapes.medium),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            if (!reading.isPaid) {
+                Button(onClick = { onMarkPaid(reading) }) {
+                    Text("Mark Paid")
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Close")
+            }
+        }
+    )
 }
