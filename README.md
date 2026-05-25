@@ -1,4 +1,4 @@
-# Rent Management System (RMS) - V3 Stable
+# Rent Management System (RMS)
 
 Welcome to the **Rent Management System (RMS)**! RMS is a complete, offline-first digital ledger built for landlords, property managers, and small property owners. Say goodbye to scattered paper notebooks, lost receipts, and messy WhatsApp logs. RMS puts everything you need to manage your rental properties directly into your pocket.
 
