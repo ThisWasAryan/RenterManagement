@@ -280,6 +280,16 @@ fun AddTenantScreen(
                 ) {
                     DatePicker(state = datePickerState)
                 }
+
+                OutlinedTextField(
+                    value = uiState.roomNumber,
+                    onValueChange = viewModel::onRoomNumberChange,
+                    label = { Text("Room Number") },
+                    leadingIcon = { Icon(Icons.Filled.MeetingRoom, null) },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    shape = MaterialTheme.shapes.medium
+                )
             }
 
             OutlinedTextField(
