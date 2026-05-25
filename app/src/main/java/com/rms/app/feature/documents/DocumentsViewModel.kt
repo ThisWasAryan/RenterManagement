@@ -108,4 +108,14 @@ class DocumentsViewModel @Inject constructor(
             }
         }
     }
+
+    fun deleteDocument(document: Document) {
+        viewModelScope.launch {
+            try {
+                documentRepository.deleteDocument(document)
+            } catch (e: Exception) {
+                _uiState.update { it.copy(error = e.message) }
+            }
+        }
+    }
 }

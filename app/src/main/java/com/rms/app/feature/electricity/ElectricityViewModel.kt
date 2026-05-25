@@ -23,7 +23,10 @@ data class AddReadingUiState(
     val meterPhotoUri: String? = null,
     val isSaving: Boolean = false,
     val isSaved: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val isPaidImmediately: Boolean = false,
+    val paymentMode: com.rms.app.core.model.enums.PaymentMode = com.rms.app.core.model.enums.PaymentMode.UPI,
+    val paymentNotes: String = ""
 )
 
 @HiltViewModel
@@ -93,6 +96,18 @@ class ElectricityViewModel @Inject constructor(
         _uiState.update { it.copy(meterPhotoUri = uri) }
     }
 
+    fun onPaidImmediatelyChange(isPaid: Boolean) {
+        _uiState.update { it.copy(isPaidImmediately = isPaid) }
+    }
+
+    fun onPaymentModeChange(mode: com.rms.app.core.model.enums.PaymentMode) {
+        _uiState.update { it.copy(paymentMode = mode) }
+    }
+
+    fun onPaymentNotesChange(notes: String) {
+        _uiState.update { it.copy(paymentNotes = notes) }
+    }
+
     fun saveReading() {
         val state = _uiState.value
         val current = state.currentReading.toDoubleOrNull()
@@ -113,9 +128,27 @@ class ElectricityViewModel @Inject constructor(
                     totalAmount = state.totalAmount,
                     meterPhotoUri = state.meterPhotoUri,
                     forMonth = state.forMonth,
-                    forYear = state.forYear
+                    forYear = state.forYear,
+                    isPaid = state.isPaidImmediately,
+                    paidDate = if (state.isPaidImmediately) System.currentTimeMillis() else null,
+                    paymentMode = if (state.isPaidImmediately) state.paymentMode.name else null
                 )
                 electricityRepository.insertReading(reading)
+                
+                if (state.isPaidImmediately && state.totalAmount > 0) {
+                    val payment = com.rms.app.core.model.entities.Payment(
+                        tenantId = tenantId,
+                        amount = state.totalAmount,
+                        type = "ELECTRICITY",
+                        mode = state.paymentMode.name,
+                        paymentDate = System.currentTimeMillis(),
+                        forMonth = state.forMonth,
+                        forYear = state.forYear,
+                        notes = state.paymentNotes.trim().ifBlank { null }
+                    )
+                    electricityRepository.insertPayment(payment)
+                }
+                
                 _uiState.update { it.copy(isSaving = false, isSaved = true) }
             } catch (e: Exception) {
                 _uiState.update { it.copy(isSaving = false, error = e.message) }

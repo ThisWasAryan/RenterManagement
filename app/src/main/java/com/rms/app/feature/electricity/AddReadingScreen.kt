@@ -1,5 +1,6 @@
 package com.rms.app.feature.electricity
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -150,6 +151,79 @@ fun AddReadingScreen(
                 Icon(if (uiState.meterPhotoUri != null) Icons.Filled.CheckCircle else Icons.Filled.CameraAlt, null, Modifier.size(18.dp), tint = if (uiState.meterPhotoUri != null) Success else LocalContentColor.current)
                 Spacer(Modifier.width(8.dp))
                 Text(if (uiState.meterPhotoUri != null) "Photo Selected" else "Add Meter Photo")
+            }
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { viewModel.onPaidImmediatelyChange(!uiState.isPaidImmediately) }
+                    .padding(vertical = 8.dp)
+            ) {
+                Checkbox(
+                    checked = uiState.isPaidImmediately,
+                    onCheckedChange = { viewModel.onPaidImmediatelyChange(it) }
+                )
+                Spacer(Modifier.width(8.dp))
+                Text("Paid Immediately", style = MaterialTheme.typography.bodyLarge)
+            }
+
+            if (uiState.isPaidImmediately) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    ),
+                    shape = MaterialTheme.shapes.medium
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text("Payment Details", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                        
+                        var expanded by remember { mutableStateOf(false) }
+                        ExposedDropdownMenuBox(
+                            expanded = expanded,
+                            onExpandedChange = { expanded = it }
+                        ) {
+                            OutlinedTextField(
+                                value = uiState.paymentMode.name,
+                                onValueChange = {},
+                                readOnly = true,
+                                label = { Text("Payment Mode") },
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                                modifier = Modifier.fillMaxWidth().menuAnchor(),
+                                shape = MaterialTheme.shapes.medium
+                            )
+                            ExposedDropdownMenu(
+                                expanded = expanded,
+                                onDismissRequest = { expanded = false }
+                            ) {
+                                com.rms.app.core.model.enums.PaymentMode.values().forEach { mode ->
+                                    DropdownMenuItem(
+                                        text = { Text(mode.name) },
+                                        onClick = {
+                                            viewModel.onPaymentModeChange(mode)
+                                            expanded = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+
+                        OutlinedTextField(
+                            value = uiState.paymentNotes,
+                            onValueChange = viewModel::onPaymentNotesChange,
+                            label = { Text("Payment Notes (Optional)") },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = MaterialTheme.shapes.medium,
+                            singleLine = true
+                        )
+                    }
+                }
             }
 
             uiState.error?.let {

@@ -8,11 +8,17 @@ import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton
 
+import com.rms.app.core.database.dao.PaymentDao
+
 @Singleton
 class ElectricityRepository @Inject constructor(
     private val electricityReadingDao: ElectricityReadingDao,
-    private val tenantDao: TenantDao
+    private val tenantDao: TenantDao,
+    private val paymentDao: PaymentDao
 ) {
+    suspend fun insertPayment(payment: com.rms.app.core.model.entities.Payment) =
+        paymentDao.insertPayment(payment)
+
     suspend fun getLastReading(tenantId: Long): ElectricityReading? =
         electricityReadingDao.getLastReading(tenantId)
 

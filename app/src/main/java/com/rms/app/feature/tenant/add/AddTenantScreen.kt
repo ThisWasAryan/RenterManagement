@@ -16,6 +16,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.rms.app.core.util.DateUtils
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -223,29 +224,71 @@ fun AddTenantScreen(
                 )
             }
 
-            Row(
+            OutlinedTextField(
+                value = uiState.monthlyRent,
+                onValueChange = viewModel::onMonthlyRentChange,
+                label = { Text("Monthly Rent *") },
+                prefix = { Text("₹") },
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                shape = MaterialTheme.shapes.medium
+            )
+
+            // Move-in Date picker
+            var showDatePicker by remember { mutableStateOf(false) }
+            val datePickerState = rememberDatePickerState(
+                initialSelectedDateMillis = uiState.moveInDate
+            )
+
+            Box(modifier = Modifier.fillMaxWidth().clickable { showDatePicker = true }) {
                 OutlinedTextField(
-                    value = uiState.monthlyRent,
-                    onValueChange = viewModel::onMonthlyRentChange,
-                    label = { Text("Monthly Rent *") },
-                    prefix = { Text("₹") },
-                    modifier = Modifier.weight(1f),
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    shape = MaterialTheme.shapes.medium
+                    value = DateUtils.formatFullDate(uiState.moveInDate),
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Move-in Date") },
+                    leadingIcon = { Icon(Icons.Filled.CalendarToday, null) },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = false,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                        disabledBorderColor = MaterialTheme.colorScheme.outline,
+                        disabledLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 )
+            }
+
+            if (showDatePicker) {
+                DatePickerDialog(
+                    onDismissRequest = { showDatePicker = false },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            datePickerState.selectedDateMillis?.let {
+                                viewModel.onMoveInDateSelected(it)
+                            }
+                            showDatePicker = false
+                        }) {
+                            Text("OK")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showDatePicker = false }) {
+                            Text("Cancel")
+                        }
+                    }
+                ) {
+                    DatePicker(state = datePickerState)
+                }
+
                 OutlinedTextField(
-                    value = uiState.rentDueDay,
-                    onValueChange = viewModel::onRentDueDayChange,
-                    label = { Text("Due Day") },
-                    modifier = Modifier.weight(0.6f),
+                    value = uiState.roomNumber,
+                    onValueChange = viewModel::onRoomNumberChange,
+                    label = { Text("Room Number") },
+                    leadingIcon = { Icon(Icons.Filled.MeetingRoom, null) },
+                    modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    shape = MaterialTheme.shapes.medium,
-                    supportingText = { Text("1-28") }
+                    shape = MaterialTheme.shapes.medium
                 )
             }
 

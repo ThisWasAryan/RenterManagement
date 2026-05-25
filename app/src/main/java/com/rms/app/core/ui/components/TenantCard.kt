@@ -55,9 +55,7 @@ fun TenantCard(
 ) {
     var expanded by remember { mutableStateOf(false) }
 
-    val isPaid = lastPayment != null &&
-        lastPayment.forMonth == DateUtils.getCurrentMonth() &&
-        lastPayment.forYear == DateUtils.getCurrentYear()
+    val isPaid = pendingBalance <= 0
     val isDue = !isPaid
     val monthlyRent = when {
         tenant.monthlyRent > 0 -> tenant.monthlyRent
@@ -172,16 +170,17 @@ fun TenantCard(
                 )
                 InfoColumn(
                     label = "Meter Reading",
-                    value = if (lastReading != null) "${lastReading.currentReading.toInt()} units" else "—"
+                    value = if (lastReading != null) "${lastReading.previousReading.toInt()} -> ${lastReading.currentReading.toInt()} (${lastReading.unitsConsumed.toInt()} u)" else "—"
                 )
             }
 
             Spacer(modifier = Modifier.height(12.dp))
 
             // Status chips row
-            Row(
+            @OptIn(ExperimentalLayoutApi::class)
+            FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 StatusChip(
                     text = if (isPaid) "Paid" else "Due",
@@ -198,6 +197,12 @@ fun TenantCard(
                     StatusChip(
                         text = "${CurrencyUtils.formatAmountCompact(pendingElectricity)} elec due",
                         color = Warning,
+                        icon = Icons.Filled.ElectricBolt
+                    )
+                } else if (lastReading != null && lastReading.isPaid) {
+                    StatusChip(
+                        text = "Elec Paid",
+                        color = Success,
                         icon = Icons.Filled.ElectricBolt
                     )
                 }
@@ -224,30 +229,24 @@ fun TenantCard(
                 )
             }
 
-            // WhatsApp reminder (only when due)
-            AnimatedVisibility(
-                visible = isDue,
-                enter = expandVertically(),
-                exit = shrinkVertically()
+            // WhatsApp reminder (always visible)
+            Button(
+                onClick = onWhatsAppReminder,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = WhatsAppGreen
+                )
             ) {
-                Button(
-                    onClick = onWhatsAppReminder,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 8.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = WhatsAppGreen
-                    )
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Chat,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("WhatsApp Reminder", fontWeight = FontWeight.SemiBold)
-                }
+                Icon(
+                    imageVector = Icons.Filled.Chat,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("WhatsApp Message", fontWeight = FontWeight.SemiBold)
             }
 
             // Expanded detail actions
@@ -263,12 +262,7 @@ fun TenantCard(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        QuickActionButton(
-                            text = "Add Expense",
-                            icon = Icons.Outlined.Receipt,
-                            onClick = { /* TODO */ },
-                            modifier = Modifier.weight(1f)
-                        )
+
                         QuickActionButton(
                             text = "View Details",
                             icon = Icons.Outlined.Person,

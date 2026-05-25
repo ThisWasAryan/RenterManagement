@@ -23,7 +23,6 @@ data class AddTenantUiState(
     val selectedRoomId: Long? = null,
     val roomNumber: String = "",
     val monthlyRent: String = "",
-    val rentDueDay: String = "1",
     val advanceDeposit: String = "",
     val electricityRate: String = "8",
     // Move-in
@@ -92,7 +91,6 @@ class AddTenantViewModel @Inject constructor(
                         selectedRoomId = tenant.roomId,
                         roomNumber = room?.roomNumber ?: "",
                         monthlyRent = if (tenant.monthlyRent > 0) tenant.monthlyRent.toInt().toString() else "",
-                        rentDueDay = tenant.rentDueDay.toString(),
                         advanceDeposit = if (tenant.advanceDeposit > 0) tenant.advanceDeposit.toInt().toString() else "",
                         electricityRate = tenant.electricityRate.toString(),
                         moveInDate = tenant.moveInDate ?: System.currentTimeMillis(),
@@ -142,9 +140,9 @@ class AddTenantViewModel @Inject constructor(
     }
     fun onRoomNumberChange(number: String) { _uiState.update { it.copy(roomNumber = number, selectedRoomId = null, useExistingRoom = false) } }
     fun onMonthlyRentChange(rent: String) { _uiState.update { it.copy(monthlyRent = rent) } }
-    fun onRentDueDayChange(day: String) { _uiState.update { it.copy(rentDueDay = day) } }
     fun onDepositChange(deposit: String) { _uiState.update { it.copy(advanceDeposit = deposit) } }
     fun onElectricityRateChange(rate: String) { _uiState.update { it.copy(electricityRate = rate) } }
+    fun onMoveInDateSelected(date: Long) { _uiState.update { it.copy(moveInDate = date) } }
     fun onNotesChange(notes: String) { _uiState.update { it.copy(notes = notes) } }
     fun onAadhaarChange(aadhaar: String) { _uiState.update { it.copy(aadhaarNumber = aadhaar) } }
     fun onPanChange(pan: String) { _uiState.update { it.copy(panNumber = pan) } }
@@ -201,7 +199,6 @@ class AddTenantViewModel @Inject constructor(
                     panNumber = state.panNumber.trim().ifBlank { null },
                     advanceDeposit = state.advanceDeposit.toDoubleOrNull() ?: 0.0,
                     monthlyRent = state.monthlyRent.toDoubleOrNull() ?: 0.0,
-                    rentDueDay = state.rentDueDay.toIntOrNull()?.coerceIn(1, 28) ?: 1,
                     electricityRate = state.electricityRate.toDoubleOrNull() ?: 8.0,
                     notes = state.notes.trim().ifBlank { null },
                     moveInDate = state.moveInDate,

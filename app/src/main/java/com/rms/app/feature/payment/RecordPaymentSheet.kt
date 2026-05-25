@@ -26,6 +26,7 @@ data class RecordPaymentData(
     val paymentMode: PaymentMode = PaymentMode.CASH,
     val forMonth: Int = DateUtils.getCurrentMonth(),
     val forYear: Int = DateUtils.getCurrentYear(),
+    val unpaidMonths: List<Pair<Int, Int>> = emptyList(),
     val notes: String = "",
     val isSaving: Boolean = false,
     val error: String? = null
@@ -128,20 +129,26 @@ fun RecordPaymentSheet(
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.SemiBold
             )
-            Row(
+            @OptIn(ExperimentalLayoutApi::class)
+            FlowRow(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Month chips - show current and previous 2 months
                 val currentMonth = DateUtils.getCurrentMonth()
                 val currentYear = DateUtils.getCurrentYear()
-                val months = listOf(
-                    (if (currentMonth - 2 < 1) currentMonth + 10 else currentMonth - 2) to
-                            (if (currentMonth - 2 < 1) currentYear - 1 else currentYear),
-                    (if (currentMonth - 1 < 1) 12 else currentMonth - 1) to
-                            (if (currentMonth - 1 < 1) currentYear - 1 else currentYear),
-                    currentMonth to currentYear
-                )
+                
+                val months = if (data.unpaidMonths.isNotEmpty()) {
+                    data.unpaidMonths.take(5) // Show up to 5 unpaid months
+                } else {
+                    listOf(
+                        (if (currentMonth - 2 < 1) currentMonth + 10 else currentMonth - 2) to
+                                (if (currentMonth - 2 < 1) currentYear - 1 else currentYear),
+                        (if (currentMonth - 1 < 1) 12 else currentMonth - 1) to
+                                (if (currentMonth - 1 < 1) currentYear - 1 else currentYear),
+                        currentMonth to currentYear
+                    )
+                }
 
                 months.forEach { (month, year) ->
                     val selected = data.forMonth == month && data.forYear == year
@@ -153,8 +160,7 @@ fun RecordPaymentSheet(
                                 DateUtils.formatMonthYear(month, year),
                                 style = MaterialTheme.typography.labelSmall
                             )
-                        },
-                        modifier = Modifier.weight(1f)
+                        }
                     )
                 }
             }

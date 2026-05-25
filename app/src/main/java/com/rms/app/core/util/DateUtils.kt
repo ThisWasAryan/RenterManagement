@@ -54,6 +54,16 @@ object DateUtils {
         return System.currentTimeMillis() > dueTimestamp
     }
 
+    fun calculateElapsedMonths(startTimestamp: Long, endTimestamp: Long = System.currentTimeMillis()): Int {
+        val start = fromTimestamp(startTimestamp)
+        val end = fromTimestamp(endTimestamp)
+        
+        var months = ChronoUnit.MONTHS.between(start, end).toInt()
+        // ChronoUnit.MONTHS.between already handles day-of-month logic correctly.
+        // E.g. Apr 25 to May 24 = 0 months. Apr 25 to May 25 = 1 month.
+        return maxOf(0, months)
+    }
+
     fun getMonthName(month: Int): String {
         return LocalDate.of(2024, month, 1).format(DateTimeFormatter.ofPattern("MMMM"))
     }
