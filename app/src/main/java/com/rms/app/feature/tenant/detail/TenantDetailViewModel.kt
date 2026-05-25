@@ -96,6 +96,10 @@ class TenantDetailViewModel @Inject constructor(
         _uiState.update { it.copy(selectedTab = tab) }
     }
 
+    fun clearError() {
+        _uiState.update { it.copy(error = null) }
+    }
+
     fun deactivateTenant() {
         viewModelScope.launch {
             tenantRepository.deactivateTenant(tenantId)
@@ -155,6 +159,11 @@ class TenantDetailViewModel @Inject constructor(
             
             val paidMonths = tenantPayments.map { it.forMonth to it.forYear }.toSet()
             val unpaidMonths = allMonths.filter { it !in paidMonths }.sortedWith(compareBy({ it.second }, { it.first }))
+            
+            if (unpaidMonths.isEmpty()) {
+                _uiState.update { it.copy(error = "Rent already paid in advance for upcoming cycle.") }
+                return@launch
+            }
             
             val defaultMonth = unpaidMonths.firstOrNull() ?: (DateUtils.getCurrentMonth() to DateUtils.getCurrentYear())
 

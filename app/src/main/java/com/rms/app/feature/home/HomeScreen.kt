@@ -43,6 +43,13 @@ fun HomeScreen(
         viewModel.refresh()
     }
 
+    LaunchedEffect(uiState.error) {
+        uiState.error?.let {
+            android.widget.Toast.makeText(context, it, android.widget.Toast.LENGTH_SHORT).show()
+            viewModel.clearError()
+        }
+    }
+
     Scaffold(
         topBar = {
             Column(

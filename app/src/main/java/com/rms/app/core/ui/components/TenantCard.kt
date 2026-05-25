@@ -55,9 +55,7 @@ fun TenantCard(
 ) {
     var expanded by remember { mutableStateOf(false) }
 
-    val isPaid = lastPayment != null &&
-        lastPayment.forMonth == DateUtils.getCurrentMonth() &&
-        lastPayment.forYear == DateUtils.getCurrentYear()
+    val isPaid = pendingBalance <= 0
     val isDue = !isPaid
     val monthlyRent = when {
         tenant.monthlyRent > 0 -> tenant.monthlyRent

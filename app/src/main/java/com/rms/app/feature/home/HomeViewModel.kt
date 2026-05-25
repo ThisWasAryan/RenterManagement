@@ -62,6 +62,10 @@ class HomeViewModel @Inject constructor(
         _refreshTrigger.value += 1
     }
 
+    fun clearError() {
+        _uiState.update { it.copy(error = null) }
+    }
+
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun loadTenants() {
         viewModelScope.launch {
@@ -186,6 +190,11 @@ class HomeViewModel @Inject constructor(
             
             val paidMonths = payments.map { it.forMonth to it.forYear }.toSet()
             val unpaidMonths = allMonths.filter { it !in paidMonths }.sortedWith(compareBy({ it.second }, { it.first }))
+            
+            if (unpaidMonths.isEmpty()) {
+                _uiState.update { it.copy(error = "Rent already paid in advance for upcoming cycle.") }
+                return@launch
+            }
             
             val defaultMonth = unpaidMonths.firstOrNull() ?: (DateUtils.getCurrentMonth() to DateUtils.getCurrentYear())
 

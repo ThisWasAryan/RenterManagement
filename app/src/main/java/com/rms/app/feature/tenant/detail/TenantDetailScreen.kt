@@ -99,6 +99,13 @@ fun TenantDetailScreen(
                 onNavigateBack()
             }
         }
+        
+        LaunchedEffect(uiState.error) {
+            uiState.error?.let {
+                android.widget.Toast.makeText(context, it, android.widget.Toast.LENGTH_SHORT).show()
+                viewModel.clearError()
+            }
+        }
 
         val twr = uiState.tenantWithRoom ?: return@Scaffold
         val tenant = twr.tenant
