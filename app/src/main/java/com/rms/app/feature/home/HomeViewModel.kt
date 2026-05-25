@@ -217,6 +217,8 @@ class HomeViewModel @Inject constructor(
                 _paymentData.update { it.copy(isSaving = false, error = e.message) }
             }
         }
+    }
+
     fun sendWhatsAppReminder(context: android.content.Context, tenantId: Long) {
         viewModelScope.launch {
             val tenant = homeRepository.getTenantById(tenantId) ?: return@launch
