@@ -40,6 +40,7 @@ class HomeViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _searchQuery = MutableStateFlow("")
+    private val _refreshTrigger = MutableStateFlow(0)
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
@@ -57,11 +58,14 @@ class HomeViewModel @Inject constructor(
         observeMonthlyCollection()
     }
 
+    fun refresh() {
+        _refreshTrigger.value += 1
+    }
+
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun loadTenants() {
         viewModelScope.launch {
-            _searchQuery
-                .debounce(300)
+            combine(_searchQuery.debounce(300), _refreshTrigger) { query, _ -> query }
                 .flatMapLatest { query ->
                     if (query.isBlank()) {
                         homeRepository.getActiveTenantsWithRooms()
@@ -76,9 +80,6 @@ class HomeViewModel @Inject constructor(
                     val cardDataList = tenantsWithRooms.map { twr ->
                         val lastPayment = homeRepository.getLastPayment(twr.tenant.id)
                         val lastReading = homeRepository.getLastReading(twr.tenant.id)
-                        val currentMonthPayment = homeRepository.getPaymentForMonth(
-                            twr.tenant.id, currentMonth, currentYear
-                        )
 
                         // Determine effective rent: tenant's monthlyRent > room's monthlyRent > 0
                         val effectiveRent = when {
@@ -87,9 +88,15 @@ class HomeViewModel @Inject constructor(
                             else -> 0.0
                         }
 
-                        val isPaid = currentMonthPayment != null
-                        val paidAmount = currentMonthPayment?.amount ?: 0.0
-                        val pending = if (effectiveRent > 0) (effectiveRent - paidAmount).coerceAtLeast(0.0) else 0.0
+                        // Calculate pending rent based on move-in date billing cycles
+                        val moveInDate = twr.tenant.moveInDate ?: System.currentTimeMillis()
+                        val monthsElapsed = DateUtils.calculateElapsedMonths(moveInDate)
+                        
+                        val rentPayments = homeRepository.getRentPaymentsByTenantList(twr.tenant.id)
+                        val totalPaid = rentPayments.sumOf { it.amount }
+                        val totalExpected = monthsElapsed * effectiveRent
+                        
+                        val pending = if (effectiveRent > 0) (totalExpected - totalPaid).coerceAtLeast(0.0) else 0.0
                         val pendingElectricity = if (lastReading != null && !lastReading.isPaid) lastReading.totalAmount else 0.0
 
                         TenantCardData(
@@ -98,7 +105,7 @@ class HomeViewModel @Inject constructor(
                             lastReading = lastReading,
                             pendingBalance = pending,
                             pendingElectricity = pendingElectricity,
-                            isPaidThisMonth = isPaid && paidAmount >= effectiveRent
+                            isPaidThisMonth = pending <= 0.0
                         )
                     }
 
@@ -161,13 +168,14 @@ class HomeViewModel @Inject constructor(
             val startMonth = calendar.get(java.util.Calendar.MONTH) + 1
             val startYear = calendar.get(java.util.Calendar.YEAR)
             
-            val currentMonth = DateUtils.getCurrentMonth()
-            val currentYear = DateUtils.getCurrentYear()
+            val monthsElapsed = DateUtils.calculateElapsedMonths(moveInDate)
             
             val allMonths = mutableListOf<Pair<Int, Int>>()
             var tempMonth = startMonth
             var tempYear = startYear
-            while (tempYear < currentYear || (tempYear == currentYear && tempMonth <= currentMonth)) {
+            
+            // Add cycles up to elapsed months (plus one for optional advance payment)
+            for (i in 0..monthsElapsed) {
                 allMonths.add(tempMonth to tempYear)
                 tempMonth++
                 if (tempMonth > 12) {
@@ -176,15 +184,10 @@ class HomeViewModel @Inject constructor(
                 }
             }
             
-            // Allow next month as well
-            val nextMonth = if (currentMonth == 12) 1 else currentMonth + 1
-            val nextYear = if (currentMonth == 12) currentYear + 1 else currentYear
-            allMonths.add(nextMonth to nextYear)
-            
             val paidMonths = payments.map { it.forMonth to it.forYear }.toSet()
             val unpaidMonths = allMonths.filter { it !in paidMonths }.sortedWith(compareBy({ it.second }, { it.first }))
             
-            val defaultMonth = unpaidMonths.firstOrNull() ?: (currentMonth to currentYear)
+            val defaultMonth = unpaidMonths.firstOrNull() ?: (DateUtils.getCurrentMonth() to DateUtils.getCurrentYear())
 
             _paymentData.value = RecordPaymentData(
                 tenantId = tenantId,
@@ -268,9 +271,13 @@ class HomeViewModel @Inject constructor(
                 room?.monthlyRent ?: 0.0 > 0.0 -> room?.monthlyRent ?: 0.0
                 else -> 0.0
             }
-            val currentMonthPayment = homeRepository.getPaymentForMonth(tenantId, DateUtils.getCurrentMonth(), DateUtils.getCurrentYear())
-            val paidAmount = currentMonthPayment?.amount ?: 0.0
-            val pendingRent = if (effectiveRent > 0) (effectiveRent - paidAmount).coerceAtLeast(0.0) else 0.0
+            val moveInDate = tenant.moveInDate ?: System.currentTimeMillis()
+            val monthsElapsed = DateUtils.calculateElapsedMonths(moveInDate)
+            val rentPayments = homeRepository.getRentPaymentsByTenantList(tenantId)
+            val totalPaidRent = rentPayments.sumOf { it.amount }
+            val totalExpected = monthsElapsed * effectiveRent
+            
+            val pendingRent = if (effectiveRent > 0) (totalExpected - totalPaidRent).coerceAtLeast(0.0) else 0.0
             val pendingElectricity = if (lastReading != null && !lastReading.isPaid) lastReading.totalAmount else 0.0
             
             val phone = tenant.whatsappNumber ?: tenant.phone
@@ -292,14 +299,21 @@ class HomeViewModel @Inject constructor(
             val amountStr = when (templateType) {
                 "ELECTRICITY_REMINDER" -> com.rms.app.core.util.CurrencyUtils.formatAmountCompact(pendingElectricity)
                 "COMBINED_REMINDER" -> com.rms.app.core.util.CurrencyUtils.formatAmountCompact(pendingRent + pendingElectricity)
-                "PAYMENT_CONFIRMATION" -> com.rms.app.core.util.CurrencyUtils.formatAmountCompact(paidAmount)
+                "PAYMENT_CONFIRMATION" -> com.rms.app.core.util.CurrencyUtils.formatAmountCompact(totalPaidRent) // Or recent payment amount
                 else -> com.rms.app.core.util.CurrencyUtils.formatAmountCompact(pendingRent)
             }
 
             val args = mapOf(
                 "tenantName" to tenant.name,
                 "amount" to amountStr,
-                "month" to DateUtils.formatMonthYear(DateUtils.getCurrentMonth(), DateUtils.getCurrentYear())
+                "rentAmount" to com.rms.app.core.util.CurrencyUtils.formatAmountCompact(pendingRent),
+                "electricityAmount" to com.rms.app.core.util.CurrencyUtils.formatAmountCompact(pendingElectricity),
+                "totalAmount" to com.rms.app.core.util.CurrencyUtils.formatAmountCompact(pendingRent + pendingElectricity),
+                "month" to DateUtils.formatMonthYear(DateUtils.getCurrentMonth(), DateUtils.getCurrentYear()),
+                "units" to (lastReading?.unitsConsumed?.toString() ?: "0"),
+                "previousReading" to (lastReading?.previousReading?.toString() ?: "0"),
+                "currentReading" to (lastReading?.currentReading?.toString() ?: "0"),
+                "roomNumber" to (room?.roomNumber ?: "")
             )
             
             com.rms.app.core.util.WhatsAppHelper.formatAndSendMessage(context, phone, templateText, args)

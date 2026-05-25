@@ -38,6 +38,10 @@ fun HomeScreen(
     val paymentData by viewModel.paymentData.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var showWhatsAppDialogFor by remember { mutableStateOf<Long?>(null) }
+    
+    LaunchedEffect(Unit) {
+        viewModel.refresh()
+    }
 
     Scaffold(
         topBar = {

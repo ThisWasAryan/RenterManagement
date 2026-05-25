@@ -264,12 +264,7 @@ fun TenantCard(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        QuickActionButton(
-                            text = "Add Expense",
-                            icon = Icons.Outlined.Receipt,
-                            onClick = { /* TODO */ },
-                            modifier = Modifier.weight(1f)
-                        )
+
                         QuickActionButton(
                             text = "View Details",
                             icon = Icons.Outlined.Person,

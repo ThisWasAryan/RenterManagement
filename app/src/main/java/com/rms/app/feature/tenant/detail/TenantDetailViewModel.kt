@@ -132,20 +132,19 @@ class TenantDetailViewModel @Inject constructor(
 
             val tenantPayments = _uiState.value.payments.filter { it.type == "RENT" }
 
-            // Calculate unpaid months
             val moveInDate = tenant?.moveInDate ?: System.currentTimeMillis()
             val calendar = java.util.Calendar.getInstance()
             calendar.timeInMillis = moveInDate
             val startMonth = calendar.get(java.util.Calendar.MONTH) + 1
             val startYear = calendar.get(java.util.Calendar.YEAR)
             
-            val currentMonth = DateUtils.getCurrentMonth()
-            val currentYear = DateUtils.getCurrentYear()
+            val monthsElapsed = DateUtils.calculateElapsedMonths(moveInDate)
             
             val allMonths = mutableListOf<Pair<Int, Int>>()
             var tempMonth = startMonth
             var tempYear = startYear
-            while (tempYear < currentYear || (tempYear == currentYear && tempMonth <= currentMonth)) {
+            
+            for (i in 0..monthsElapsed) {
                 allMonths.add(tempMonth to tempYear)
                 tempMonth++
                 if (tempMonth > 12) {
@@ -154,15 +153,10 @@ class TenantDetailViewModel @Inject constructor(
                 }
             }
             
-            // Allow next month as well
-            val nextMonth = if (currentMonth == 12) 1 else currentMonth + 1
-            val nextYear = if (currentMonth == 12) currentYear + 1 else currentYear
-            allMonths.add(nextMonth to nextYear)
-            
             val paidMonths = tenantPayments.map { it.forMonth to it.forYear }.toSet()
             val unpaidMonths = allMonths.filter { it !in paidMonths }.sortedWith(compareBy({ it.second }, { it.first }))
             
-            val defaultMonth = unpaidMonths.firstOrNull() ?: (currentMonth to currentYear)
+            val defaultMonth = unpaidMonths.firstOrNull() ?: (DateUtils.getCurrentMonth() to DateUtils.getCurrentYear())
 
             _paymentData.value = RecordPaymentData(
                 tenantId = tenantId,
@@ -278,18 +272,20 @@ class TenantDetailViewModel @Inject constructor(
             // Assume we can compute the due amounts by taking all readings and payments
             // Since we need pending, we might just calculate it
             val lastReading = _uiState.value.electricityReadings.maxByOrNull { it.readingDate }
-            val currentMonthPayment = _uiState.value.payments.find { 
-                it.forMonth == DateUtils.getCurrentMonth() && it.forYear == DateUtils.getCurrentYear() 
-            }
-            
             val effectiveRent = when {
                 tenant.monthlyRent > 0 -> tenant.monthlyRent
                 room?.monthlyRent ?: 0.0 > 0.0 -> room?.monthlyRent ?: 0.0
                 else -> 0.0
             }
             
-            val paidAmount = currentMonthPayment?.amount ?: 0.0
-            val pendingRent = if (effectiveRent > 0) (effectiveRent - paidAmount).coerceAtLeast(0.0) else 0.0
+            val moveInDate = tenant.moveInDate ?: System.currentTimeMillis()
+            val monthsElapsed = DateUtils.calculateElapsedMonths(moveInDate)
+            
+            val rentPayments = _uiState.value.payments.filter { it.type == "RENT" }
+            val totalPaidRent = rentPayments.sumOf { it.amount }
+            val totalExpected = monthsElapsed * effectiveRent
+            
+            val pendingRent = if (effectiveRent > 0) (totalExpected - totalPaidRent).coerceAtLeast(0.0) else 0.0
             val pendingElectricity = if (lastReading != null && !lastReading.isPaid) lastReading.totalAmount else 0.0
             
             val phone = tenant.whatsappNumber ?: tenant.phone
@@ -311,14 +307,21 @@ class TenantDetailViewModel @Inject constructor(
             val amountStr = when (templateType) {
                 "ELECTRICITY_REMINDER" -> com.rms.app.core.util.CurrencyUtils.formatAmountCompact(pendingElectricity)
                 "COMBINED_REMINDER" -> com.rms.app.core.util.CurrencyUtils.formatAmountCompact(pendingRent + pendingElectricity)
-                "PAYMENT_CONFIRMATION" -> com.rms.app.core.util.CurrencyUtils.formatAmountCompact(paidAmount)
+                "PAYMENT_CONFIRMATION" -> com.rms.app.core.util.CurrencyUtils.formatAmountCompact(totalPaidRent) // Or recent payment amount
                 else -> com.rms.app.core.util.CurrencyUtils.formatAmountCompact(pendingRent)
             }
 
             val args = mapOf(
                 "tenantName" to tenant.name,
                 "amount" to amountStr,
-                "month" to DateUtils.formatMonthYear(DateUtils.getCurrentMonth(), DateUtils.getCurrentYear())
+                "rentAmount" to com.rms.app.core.util.CurrencyUtils.formatAmountCompact(pendingRent),
+                "electricityAmount" to com.rms.app.core.util.CurrencyUtils.formatAmountCompact(pendingElectricity),
+                "totalAmount" to com.rms.app.core.util.CurrencyUtils.formatAmountCompact(pendingRent + pendingElectricity),
+                "month" to DateUtils.formatMonthYear(DateUtils.getCurrentMonth(), DateUtils.getCurrentYear()),
+                "units" to (lastReading?.unitsConsumed?.toString() ?: "0"),
+                "previousReading" to (lastReading?.previousReading?.toString() ?: "0"),
+                "currentReading" to (lastReading?.currentReading?.toString() ?: "0"),
+                "roomNumber" to (room?.roomNumber ?: "")
             )
             
             com.rms.app.core.util.WhatsAppHelper.formatAndSendMessage(context, phone, templateText, args)
