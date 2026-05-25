@@ -20,6 +20,7 @@ data class AddReadingUiState(
     val forYear: Int = DateUtils.getCurrentYear(),
     val unitsConsumed: Double = 0.0,
     val totalAmount: Double = 0.0,
+    val meterPhotoUri: String? = null,
     val isSaving: Boolean = false,
     val isSaved: Boolean = false,
     val error: String? = null
@@ -88,6 +89,10 @@ class ElectricityViewModel @Inject constructor(
         }
     }
 
+    fun onMeterPhotoSelected(uri: String?) {
+        _uiState.update { it.copy(meterPhotoUri = uri) }
+    }
+
     fun saveReading() {
         val state = _uiState.value
         val current = state.currentReading.toDoubleOrNull()
@@ -106,6 +111,7 @@ class ElectricityViewModel @Inject constructor(
                     unitsConsumed = state.unitsConsumed,
                     ratePerUnit = state.ratePerUnit.toDoubleOrNull() ?: 8.0,
                     totalAmount = state.totalAmount,
+                    meterPhotoUri = state.meterPhotoUri,
                     forMonth = state.forMonth,
                     forYear = state.forYear
                 )

@@ -1,5 +1,6 @@
 package com.rms.app.feature.tenant.add
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -54,10 +55,10 @@ fun AddTenantScreen(
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             // Section: Personal Info
-            SectionHeader("Personal Information")
+            SectionHeader("Tenant Information")
 
             OutlinedTextField(
                 value = uiState.name,
@@ -81,6 +82,21 @@ fun AddTenantScreen(
                 shape = MaterialTheme.shapes.medium
             )
 
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+            ) {
+                Checkbox(
+                    checked = uiState.sameAsPhone,
+                    onCheckedChange = { viewModel.toggleSameAsPhone() }
+                )
+                Text(
+                    text = "Same as Phone Number",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.clickable { viewModel.toggleSameAsPhone() }
+                )
+            }
+
             OutlinedTextField(
                 value = uiState.whatsappNumber,
                 onValueChange = viewModel::onWhatsAppChange,
@@ -92,73 +108,175 @@ fun AddTenantScreen(
                 shape = MaterialTheme.shapes.medium
             )
 
-            OutlinedTextField(
-                value = uiState.email,
-                onValueChange = viewModel::onEmailChange,
-                label = { Text("Email") },
-                leadingIcon = { Icon(Icons.Filled.Email, null) },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                shape = MaterialTheme.shapes.medium
-            )
+            // Section: Room & Rent
+            SectionHeader("Room & Rent")
 
-            // Section: Room
-            SectionHeader("Room Assignment")
-
-            var roomDropdownExpanded by remember { mutableStateOf(false) }
-            ExposedDropdownMenuBox(
-                expanded = roomDropdownExpanded,
-                onExpandedChange = { roomDropdownExpanded = it }
-            ) {
-                OutlinedTextField(
-                    value = uiState.availableRooms.find { it.id == uiState.selectedRoomId }
-                        ?.let { "Room ${it.roomNumber} - ₹${it.monthlyRent.toInt()}/mo" } ?: "",
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("Select Room") },
-                    leadingIcon = { Icon(Icons.Filled.MeetingRoom, null) },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = roomDropdownExpanded) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .menuAnchor(),
-                    shape = MaterialTheme.shapes.medium
-                )
-                ExposedDropdownMenu(
-                    expanded = roomDropdownExpanded,
-                    onDismissRequest = { roomDropdownExpanded = false }
+            // Toggle between existing room and new room
+            // Toggle between existing room and new room
+            if (uiState.availableRooms.isNotEmpty() || uiState.availableProperties.isNotEmpty()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    uiState.availableRooms.forEach { room ->
-                        DropdownMenuItem(
-                            text = {
-                                Text("Room ${room.roomNumber} (${room.floor}) - ₹${room.monthlyRent.toInt()}/mo [${room.status}]")
-                            },
-                            onClick = {
-                                viewModel.onRoomSelected(room.id)
-                                roomDropdownExpanded = false
-                            }
-                        )
-                    }
+                    FilterChip(
+                        selected = !uiState.useExistingRoom,
+                        onClick = { if (uiState.useExistingRoom) viewModel.toggleUseExistingRoom() },
+                        label = { Text("New Room") }
+                    )
+                    FilterChip(
+                        selected = uiState.useExistingRoom,
+                        onClick = { if (!uiState.useExistingRoom) viewModel.toggleUseExistingRoom() },
+                        label = { Text("Existing Room") }
+                    )
                 }
             }
 
-            // Section: Financial
-            SectionHeader("Financial Details")
+            if (uiState.useExistingRoom && uiState.availableRooms.isNotEmpty()) {
+                // Existing room dropdown
+                var roomDropdownExpanded by remember { mutableStateOf(false) }
+                ExposedDropdownMenuBox(
+                    expanded = roomDropdownExpanded,
+                    onExpandedChange = { roomDropdownExpanded = it }
+                ) {
+                    OutlinedTextField(
+                        value = uiState.availableRooms.find { it.id == uiState.selectedRoomId }
+                            ?.let { "Room ${it.roomNumber} - ₹${it.monthlyRent.toInt()}/mo" } ?: "",
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Select Room") },
+                        leadingIcon = { Icon(Icons.Filled.MeetingRoom, null) },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = roomDropdownExpanded) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor(),
+                        shape = MaterialTheme.shapes.medium
+                    )
+                    ExposedDropdownMenu(
+                        expanded = roomDropdownExpanded,
+                        onDismissRequest = { roomDropdownExpanded = false }
+                    ) {
+                        uiState.availableRooms.forEach { room ->
+                            DropdownMenuItem(
+                                text = { Text("Room ${room.roomNumber} - ₹${room.monthlyRent.toInt()}/mo [${room.status}]") },
+                                onClick = {
+                                    viewModel.onRoomSelected(room.id)
+                                    roomDropdownExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+            } else {
+                // New room
+                if (uiState.availableProperties.isNotEmpty()) {
+                    var propDropdownExpanded by remember { mutableStateOf(false) }
+                    ExposedDropdownMenuBox(
+                        expanded = propDropdownExpanded,
+                        onExpandedChange = { propDropdownExpanded = it }
+                    ) {
+                        OutlinedTextField(
+                            value = uiState.availableProperties.find { it.id == uiState.selectedPropertyId }?.name ?: uiState.newPropertyName,
+                            onValueChange = viewModel::onNewPropertyNameChange,
+                            label = { Text("Property Name") },
+                            leadingIcon = { Icon(Icons.Filled.Home, null) },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = propDropdownExpanded) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .menuAnchor(),
+                            shape = MaterialTheme.shapes.medium
+                        )
+                        ExposedDropdownMenu(
+                            expanded = propDropdownExpanded,
+                            onDismissRequest = { propDropdownExpanded = false }
+                        ) {
+                            uiState.availableProperties.forEach { prop ->
+                                DropdownMenuItem(
+                                    text = { Text(prop.name) },
+                                    onClick = {
+                                        viewModel.onPropertySelected(prop.id)
+                                        propDropdownExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    OutlinedTextField(
+                        value = uiState.newPropertyName,
+                        onValueChange = viewModel::onNewPropertyNameChange,
+                        label = { Text("Property Name") },
+                        leadingIcon = { Icon(Icons.Filled.Home, null) },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        shape = MaterialTheme.shapes.medium
+                    )
+                }
+
+                OutlinedTextField(
+                    value = uiState.roomNumber,
+                    onValueChange = viewModel::onRoomNumberChange,
+                    label = { Text("Room Number") },
+                    leadingIcon = { Icon(Icons.Filled.MeetingRoom, null) },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    shape = MaterialTheme.shapes.medium
+                )
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                OutlinedTextField(
+                    value = uiState.monthlyRent,
+                    onValueChange = viewModel::onMonthlyRentChange,
+                    label = { Text("Monthly Rent *") },
+                    prefix = { Text("₹") },
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    shape = MaterialTheme.shapes.medium
+                )
+                OutlinedTextField(
+                    value = uiState.rentDueDay,
+                    onValueChange = viewModel::onRentDueDayChange,
+                    label = { Text("Due Day") },
+                    modifier = Modifier.weight(0.6f),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    shape = MaterialTheme.shapes.medium,
+                    supportingText = { Text("1-28") }
+                )
+            }
 
             OutlinedTextField(
                 value = uiState.advanceDeposit,
                 onValueChange = viewModel::onDepositChange,
-                label = { Text("Advance / Security Deposit") },
+                label = { Text("Security Deposit") },
+                prefix = { Text("₹") },
                 leadingIcon = { Icon(Icons.Filled.AccountBalance, null) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                prefix = { Text("₹") },
+                shape = MaterialTheme.shapes.medium
+            )
+
+            // Section: Electricity
+            SectionHeader("Electricity")
+
+            OutlinedTextField(
+                value = uiState.electricityRate,
+                onValueChange = viewModel::onElectricityRateChange,
+                label = { Text("Rate per Unit (₹)") },
+                leadingIcon = { Icon(Icons.Filled.ElectricBolt, null) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 shape = MaterialTheme.shapes.medium
             )
 
             // Section: ID Documents
-            SectionHeader("ID Documents")
+            SectionHeader("ID Documents (Optional)")
 
             OutlinedTextField(
                 value = uiState.aadhaarNumber,
@@ -191,8 +309,8 @@ fun AddTenantScreen(
                 leadingIcon = { Icon(Icons.Filled.Notes, null) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(120.dp),
-                maxLines = 4,
+                    .height(100.dp),
+                maxLines = 3,
                 shape = MaterialTheme.shapes.medium
             )
 

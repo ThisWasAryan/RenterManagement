@@ -19,6 +19,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
+    onNavigateToWhatsAppTemplates: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -37,26 +38,38 @@ fun SettingsScreen(
         // Appearance
         item { SettingsSectionTitle("Appearance") }
         item {
-            SettingsToggleRow(
-                icon = Icons.Filled.DarkMode,
-                title = "Dark Mode",
-                subtitle = "Use dark theme",
-                isChecked = uiState.isDarkMode,
-                onToggle = { viewModel.toggleDarkMode() }
-            )
+            Card(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Filled.DarkMode, null, tint = MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.width(12.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text("Theme", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
+                            Text("Select app appearance", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                    Spacer(Modifier.height(12.dp))
+                        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                            com.rms.app.core.ui.theme.ThemeMode.entries.forEachIndexed { index, mode ->
+                                SegmentedButton(
+                                selected = uiState.themeMode == mode,
+                                onClick = { viewModel.updateThemeMode(mode) },
+                                shape = SegmentedButtonDefaults.itemShape(index = index, count = 2)
+                            ) {
+                                Text(mode.name.lowercase().replaceFirstChar { it.uppercase() })
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         // Defaults
         item { SettingsSectionTitle("Defaults") }
-        item {
-            SettingsInputRow(
-                icon = Icons.Filled.CurrencyRupee,
-                title = "Default Rent Amount",
-                value = uiState.defaultRent,
-                onValueChange = viewModel::updateDefaultRent,
-                keyboardType = KeyboardType.Number
-            )
-        }
+        // Removed Default Rent Amount
         item {
             SettingsInputRow(
                 icon = Icons.Filled.ElectricBolt,
@@ -65,6 +78,28 @@ fun SettingsScreen(
                 onValueChange = viewModel::updateElectricityRate,
                 keyboardType = KeyboardType.Decimal
             )
+        }
+        
+        item { SettingsSectionTitle("Communication") }
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                onClick = onNavigateToWhatsAppTemplates
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Filled.Chat, null, tint = MaterialTheme.colorScheme.primary)
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text("WhatsApp Templates", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
+                        Text("Manage default message templates", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Icon(Icons.Filled.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
         }
 
         // Property Management

@@ -17,9 +17,10 @@ import com.rms.app.core.model.entities.*
         Document::class,
         Expense::class,
         Reminder::class,
-        MaintenanceLog::class
+        MaintenanceLog::class,
+        WhatsAppTemplate::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = true
 )
 @TypeConverters(DateConverters::class)
@@ -33,4 +34,5 @@ abstract class RMSDatabase : RoomDatabase() {
     abstract fun expenseDao(): ExpenseDao
     abstract fun reminderDao(): ReminderDao
     abstract fun maintenanceLogDao(): MaintenanceLogDao
+    abstract fun whatsAppTemplateDao(): WhatsAppTemplateDao
 }

@@ -10,18 +10,35 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.rms.app.core.model.entities.Property
+import com.rms.app.core.database.dao.PropertyDao
 
 data class AddTenantUiState(
+    // Personal
     val name: String = "",
     val phone: String = "",
     val whatsappNumber: String = "",
     val email: String = "",
+    // Room & Rent
     val selectedRoomId: Long? = null,
+    val roomNumber: String = "",
+    val monthlyRent: String = "",
+    val rentDueDay: String = "1",
     val advanceDeposit: String = "",
-    val notes: String = "",
+    val electricityRate: String = "8",
+    // Move-in
+    val moveInDate: Long = System.currentTimeMillis(),
+    // ID
     val aadhaarNumber: String = "",
     val panNumber: String = "",
+    // Other
+    val notes: String = "",
     val availableRooms: List<Room> = emptyList(),
+    val availableProperties: List<Property> = emptyList(),
+    val useExistingRoom: Boolean = false,
+    val selectedPropertyId: Long? = null,
+    val newPropertyName: String = "",
+    val sameAsPhone: Boolean = false,
     val isEditing: Boolean = false,
     val isSaving: Boolean = false,
     val isSaved: Boolean = false,
@@ -31,6 +48,7 @@ data class AddTenantUiState(
 @HiltViewModel
 class AddTenantViewModel @Inject constructor(
     private val tenantRepository: TenantRepository,
+    private val propertyDao: PropertyDao,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -41,7 +59,16 @@ class AddTenantViewModel @Inject constructor(
 
     init {
         loadRooms()
+        loadProperties()
         if (tenantId > 0) loadTenant()
+    }
+
+    private fun loadProperties() {
+        viewModelScope.launch {
+            propertyDao.getAllProperties().collect { props ->
+                _uiState.update { it.copy(availableProperties = props) }
+            }
+        }
     }
 
     private fun loadRooms() {
@@ -55,6 +82,7 @@ class AddTenantViewModel @Inject constructor(
     private fun loadTenant() {
         viewModelScope.launch {
             tenantRepository.getTenantById(tenantId)?.let { tenant ->
+                val room = tenant.roomId?.let { tenantRepository.getRoomById(it) }
                 _uiState.update {
                     it.copy(
                         name = tenant.name,
@@ -62,26 +90,65 @@ class AddTenantViewModel @Inject constructor(
                         whatsappNumber = tenant.whatsappNumber ?: "",
                         email = tenant.email ?: "",
                         selectedRoomId = tenant.roomId,
-                        advanceDeposit = tenant.advanceDeposit.toString(),
+                        roomNumber = room?.roomNumber ?: "",
+                        monthlyRent = if (tenant.monthlyRent > 0) tenant.monthlyRent.toInt().toString() else "",
+                        rentDueDay = tenant.rentDueDay.toString(),
+                        advanceDeposit = if (tenant.advanceDeposit > 0) tenant.advanceDeposit.toInt().toString() else "",
+                        electricityRate = tenant.electricityRate.toString(),
+                        moveInDate = tenant.moveInDate ?: System.currentTimeMillis(),
                         notes = tenant.notes ?: "",
                         aadhaarNumber = tenant.aadhaarNumber ?: "",
                         panNumber = tenant.panNumber ?: "",
-                        isEditing = true
+                        isEditing = true,
+                        useExistingRoom = tenant.roomId != null
                     )
                 }
             }
         }
     }
 
-    fun onNameChange(name: String) { _uiState.update { it.copy(name = name) } }
-    fun onPhoneChange(phone: String) { _uiState.update { it.copy(phone = phone) } }
-    fun onWhatsAppChange(number: String) { _uiState.update { it.copy(whatsappNumber = number) } }
+    fun onNameChange(name: String) { _uiState.update { it.copy(name = name, error = null) } }
+    fun onPhoneChange(phone: String) { 
+        _uiState.update { 
+            it.copy(
+                phone = phone,
+                whatsappNumber = if (it.sameAsPhone) phone else it.whatsappNumber
+            ) 
+        } 
+    }
+    fun onWhatsAppChange(number: String) { _uiState.update { it.copy(whatsappNumber = number, sameAsPhone = false) } }
+    fun toggleSameAsPhone() {
+        _uiState.update {
+            val newSameAsPhone = !it.sameAsPhone
+            it.copy(
+                sameAsPhone = newSameAsPhone,
+                whatsappNumber = if (newSameAsPhone) it.phone else it.whatsappNumber
+            )
+        }
+    }
     fun onEmailChange(email: String) { _uiState.update { it.copy(email = email) } }
-    fun onRoomSelected(roomId: Long?) { _uiState.update { it.copy(selectedRoomId = roomId) } }
+    fun onPropertySelected(propertyId: Long?) { _uiState.update { it.copy(selectedPropertyId = propertyId) } }
+    fun onNewPropertyNameChange(name: String) { _uiState.update { it.copy(newPropertyName = name, selectedPropertyId = null) } }
+    fun onRoomSelected(roomId: Long?) {
+        _uiState.update {
+            val room = it.availableRooms.find { r -> r.id == roomId }
+            it.copy(
+                selectedRoomId = roomId,
+                roomNumber = room?.roomNumber ?: "",
+                monthlyRent = if (room != null && room.monthlyRent > 0) room.monthlyRent.toInt().toString() else it.monthlyRent,
+                useExistingRoom = roomId != null
+            )
+        }
+    }
+    fun onRoomNumberChange(number: String) { _uiState.update { it.copy(roomNumber = number, selectedRoomId = null, useExistingRoom = false) } }
+    fun onMonthlyRentChange(rent: String) { _uiState.update { it.copy(monthlyRent = rent) } }
+    fun onRentDueDayChange(day: String) { _uiState.update { it.copy(rentDueDay = day) } }
     fun onDepositChange(deposit: String) { _uiState.update { it.copy(advanceDeposit = deposit) } }
+    fun onElectricityRateChange(rate: String) { _uiState.update { it.copy(electricityRate = rate) } }
     fun onNotesChange(notes: String) { _uiState.update { it.copy(notes = notes) } }
     fun onAadhaarChange(aadhaar: String) { _uiState.update { it.copy(aadhaarNumber = aadhaar) } }
     fun onPanChange(pan: String) { _uiState.update { it.copy(panNumber = pan) } }
+    fun toggleUseExistingRoom() { _uiState.update { it.copy(useExistingRoom = !it.useExistingRoom, selectedRoomId = null) } }
 
     fun saveTenant() {
         val state = _uiState.value
@@ -93,9 +160,39 @@ class AddTenantViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true, error = null) }
             try {
+                var roomId = state.selectedRoomId
+
+                // If no existing room selected but room number provided, create a new room
+                if (roomId == null && state.roomNumber.isNotBlank()) {
+                    var propId = state.selectedPropertyId
+                    if (propId == null) {
+                        if (state.newPropertyName.isNotBlank()) {
+                            propId = propertyDao.insertProperty(Property(name = state.newPropertyName, address = ""))
+                        } else {
+                            // Default property if none provided
+                            val existingProps = propertyDao.getAllProperties().first()
+                            if (existingProps.isEmpty()) {
+                                propId = propertyDao.insertProperty(Property(name = "Default Property", address = ""))
+                            } else {
+                                propId = existingProps.first().id
+                            }
+                        }
+                    }
+
+                    val newRoom = Room(
+                        propertyId = propId,
+                        roomNumber = state.roomNumber.trim(),
+                        floor = "",
+                        monthlyRent = state.monthlyRent.toDoubleOrNull() ?: 0.0,
+                        securityDeposit = state.advanceDeposit.toDoubleOrNull() ?: 0.0,
+                        status = "occupied"
+                    )
+                    roomId = tenantRepository.insertRoom(newRoom)
+                }
+
                 val tenant = Tenant(
                     id = if (state.isEditing) tenantId else 0,
-                    roomId = state.selectedRoomId,
+                    roomId = roomId,
                     name = state.name.trim(),
                     phone = state.phone.trim(),
                     whatsappNumber = state.whatsappNumber.trim().ifBlank { null },
@@ -103,8 +200,11 @@ class AddTenantViewModel @Inject constructor(
                     aadhaarNumber = state.aadhaarNumber.trim().ifBlank { null },
                     panNumber = state.panNumber.trim().ifBlank { null },
                     advanceDeposit = state.advanceDeposit.toDoubleOrNull() ?: 0.0,
+                    monthlyRent = state.monthlyRent.toDoubleOrNull() ?: 0.0,
+                    rentDueDay = state.rentDueDay.toIntOrNull()?.coerceIn(1, 28) ?: 1,
+                    electricityRate = state.electricityRate.toDoubleOrNull() ?: 8.0,
                     notes = state.notes.trim().ifBlank { null },
-                    moveInDate = System.currentTimeMillis(),
+                    moveInDate = state.moveInDate,
                     isActive = true
                 )
 
@@ -115,7 +215,7 @@ class AddTenantViewModel @Inject constructor(
                 }
 
                 // Mark room as occupied
-                state.selectedRoomId?.let {
+                roomId?.let {
                     tenantRepository.updateRoomStatus(it, "occupied")
                 }
 

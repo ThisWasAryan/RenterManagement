@@ -16,9 +16,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.rms.app.core.navigation.Screen
 import com.rms.app.core.ui.components.*
+import com.rms.app.core.ui.theme.Error
+import com.rms.app.core.ui.theme.Success
+import com.rms.app.core.ui.theme.Warning
+import com.rms.app.core.util.CurrencyUtils
 import com.rms.app.core.util.WhatsAppHelper
+import com.rms.app.feature.payment.RecordPaymentSheet
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,11 +33,9 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val showPaymentSheet by viewModel.showPaymentSheet.collectAsStateWithLifecycle()
+    val paymentData by viewModel.paymentData.collectAsStateWithLifecycle()
     val context = LocalContext.current
-
-    // Record payment bottom sheet state
-    var showPaymentSheet by remember { mutableStateOf(false) }
-    var selectedTenantId by remember { mutableLongStateOf(0L) }
 
     Scaffold(
         topBar = {
@@ -61,20 +63,7 @@ fun HomeScreen(
                         )
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        IconButton(onClick = { /* TODO: theme toggle */ }) {
-                            Icon(
-                                Icons.Filled.DarkMode,
-                                contentDescription = "Toggle theme",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        IconButton(onClick = { /* TODO: filter */ }) {
-                            Icon(
-                                Icons.Filled.FilterList,
-                                contentDescription = "Filter",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                        // Removed filter button for now
                     }
                 }
 
@@ -84,6 +73,36 @@ fun HomeScreen(
                     query = uiState.searchQuery,
                     onQueryChange = viewModel::onSearchQueryChange
                 )
+
+                // Summary strip
+                if (uiState.activeTenantCount > 0) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        SummaryChip(
+                            label = "Collected",
+                            value = CurrencyUtils.formatAmountCompact(uiState.totalCollectedThisMonth),
+                            color = Success,
+                            modifier = Modifier.weight(1f)
+                        )
+                        SummaryChip(
+                            label = "Pending",
+                            value = CurrencyUtils.formatAmountCompact(uiState.totalPendingRent),
+                            color = if (uiState.totalPendingRent > 0) Warning else Success,
+                            modifier = Modifier.weight(1f)
+                        )
+                        if (uiState.overdueCount > 0) {
+                            SummaryChip(
+                                label = "Overdue",
+                                value = "${uiState.overdueCount}",
+                                color = Error,
+                                modifier = Modifier.weight(0.7f)
+                            )
+                        }
+                    }
+                }
             }
         },
         floatingActionButton = {
@@ -133,24 +152,15 @@ fun HomeScreen(
                                 lastPayment = cardData.lastPayment,
                                 lastReading = cardData.lastReading,
                                 pendingBalance = cardData.pendingBalance,
+                                pendingElectricity = cardData.pendingElectricity,
                                 onRecordRent = {
-                                    selectedTenantId = cardData.tenantWithRoom.tenant.id
-                                    showPaymentSheet = true
+                                    viewModel.openPaymentSheet(cardData.tenantWithRoom.tenant.id)
                                 },
                                 onAddMeter = {
                                     onNavigateToAddReading(cardData.tenantWithRoom.tenant.id)
                                 },
                                 onWhatsAppReminder = {
-                                    val tenant = cardData.tenantWithRoom.tenant
-                                    val phone = tenant.whatsappNumber ?: tenant.phone
-                                    val room = cardData.tenantWithRoom.room
-                                    WhatsAppHelper.sendRentReminder(
-                                        context = context,
-                                        phoneNumber = phone,
-                                        tenantName = tenant.name,
-                                        amount = room?.monthlyRent ?: 0.0,
-                                        month = "this month"
-                                    )
+                                    viewModel.sendWhatsAppReminder(context, cardData.tenantWithRoom.tenant.id)
                                 },
                                 onViewDetails = {
                                     onNavigateToTenantDetail(cardData.tenantWithRoom.tenant.id)
@@ -167,54 +177,48 @@ fun HomeScreen(
         }
     }
 
-    // Record Payment Bottom Sheet
+    // Record Payment Bottom Sheet — REAL implementation
     if (showPaymentSheet) {
-        RecordPaymentBottomSheet(
-            tenantId = selectedTenantId,
-            onDismiss = { showPaymentSheet = false }
+        RecordPaymentSheet(
+            data = paymentData,
+            onAmountChange = viewModel::onPaymentAmountChange,
+            onModeChange = viewModel::onPaymentModeChange,
+            onMonthChange = viewModel::onPaymentMonthChange,
+            onYearChange = viewModel::onPaymentYearChange,
+            onNotesChange = viewModel::onPaymentNotesChange,
+            onSave = viewModel::savePayment,
+            onDismiss = viewModel::dismissPaymentSheet
         )
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun RecordPaymentBottomSheet(
-    tenantId: Long,
-    onDismiss: () -> Unit
+private fun SummaryChip(
+    label: String,
+    value: String,
+    color: androidx.compose.ui.graphics.Color,
+    modifier: Modifier = Modifier
 ) {
-    // This is a placeholder — the full implementation is in feature/payment
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.surface
+    Surface(
+        modifier = modifier,
+        shape = MaterialTheme.shapes.small,
+        color = color.copy(alpha = 0.1f)
     ) {
-        // Placeholder content — real implementation will be in RecordPaymentSheet.kt
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(24.dp)
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Record Payment",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
+                value,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = color
             )
-            Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "Payment recording UI — coming from PaymentViewModel",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                label,
+                style = MaterialTheme.typography.labelSmall,
+                color = color.copy(alpha = 0.8f)
             )
-            Spacer(modifier = Modifier.height(32.dp))
-            Button(
-                onClick = onDismiss,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Close")
-            }
-            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }

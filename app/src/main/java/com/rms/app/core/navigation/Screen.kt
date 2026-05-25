@@ -18,4 +18,5 @@ sealed class Screen(val route: String) {
     data object Documents : Screen("documents")
     data object Reminders : Screen("reminders")
     data object Settings : Screen("settings")
+    data object WhatsAppTemplates : Screen("whatsapp_templates")
 }

@@ -131,7 +131,16 @@ fun RMSNavHost(
 
         // Settings
         composable(Screen.Settings.route) {
-            SettingsScreen()
+            SettingsScreen(
+                onNavigateToWhatsAppTemplates = { navController.navigate(Screen.WhatsAppTemplates.route) }
+            )
+        }
+
+        // WhatsApp Templates
+        composable(Screen.WhatsAppTemplates.route) {
+            com.rms.app.feature.whatsapp.WhatsAppTemplateScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
         }
     }
 }

@@ -46,6 +46,7 @@ fun TenantCard(
     lastPayment: Payment?,
     lastReading: ElectricityReading?,
     pendingBalance: Double,
+    pendingElectricity: Double,
     onRecordRent: () -> Unit,
     onAddMeter: () -> Unit,
     onWhatsAppReminder: () -> Unit,
@@ -58,7 +59,11 @@ fun TenantCard(
         lastPayment.forMonth == DateUtils.getCurrentMonth() &&
         lastPayment.forYear == DateUtils.getCurrentYear()
     val isDue = !isPaid
-    val monthlyRent = room?.monthlyRent ?: 0.0
+    val monthlyRent = when {
+        tenant.monthlyRent > 0 -> tenant.monthlyRent
+        (room?.monthlyRent ?: 0.0) > 0 -> room?.monthlyRent ?: 0.0
+        else -> 0.0
+    }
 
     Card(
         modifier = modifier
@@ -184,9 +189,16 @@ fun TenantCard(
                 )
                 if (pendingBalance > 0) {
                     StatusChip(
-                        text = "${CurrencyUtils.formatAmountCompact(pendingBalance)} pending",
+                        text = "${CurrencyUtils.formatAmountCompact(pendingBalance)} rent due",
                         color = Error,
                         icon = Icons.Filled.ErrorOutline
+                    )
+                }
+                if (pendingElectricity > 0) {
+                    StatusChip(
+                        text = "${CurrencyUtils.formatAmountCompact(pendingElectricity)} elec due",
+                        color = Warning,
+                        icon = Icons.Filled.ElectricBolt
                     )
                 }
             }

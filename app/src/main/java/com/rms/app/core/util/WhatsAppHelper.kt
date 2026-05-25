@@ -6,58 +6,28 @@ import android.net.Uri
 
 object WhatsAppHelper {
 
-    fun sendRentReminder(
+    fun formatAndSendMessage(
         context: Context,
         phoneNumber: String,
-        tenantName: String,
-        amount: Double,
-        month: String
+        template: String,
+        args: Map<String, String>
     ) {
-        val message = buildString {
-            append("Hi $tenantName,\n\n")
-            append("This is a friendly reminder that your rent of ")
-            append(CurrencyUtils.formatAmountCompact(amount))
-            append(" for $month is due.\n\n")
-            append("Please make the payment at your earliest convenience.\n\n")
-            append("Thank you! 🏠")
+        var message = template
+        args.forEach { (key, value) ->
+            message = message.replace("{$key}", value)
         }
         openWhatsApp(context, phoneNumber, message)
     }
 
-    fun sendPaymentConfirmation(
-        context: Context,
-        phoneNumber: String,
-        tenantName: String,
-        amount: Double,
-        month: String
-    ) {
-        val message = buildString {
-            append("Hi $tenantName,\n\n")
-            append("Your rent payment of ")
-            append(CurrencyUtils.formatAmountCompact(amount))
-            append(" for $month has been received.\n\n")
-            append("Thank you! ✅")
-        }
-        openWhatsApp(context, phoneNumber, message)
-    }
+    // Fallbacks if templates are not set yet
+    fun getDefaultRentReminderTemplate(): String = 
+        "Hi {tenantName},\n\nThis is a friendly reminder that your rent of {amount} for {month} is due.\n\nPlease make the payment at your earliest convenience.\n\nThank you! \uD83C\uDFE0"
+        
+    fun getDefaultPaymentConfirmationTemplate(): String =
+        "Hi {tenantName},\n\nYour rent payment of {amount} for {month} has been received.\n\nThank you! ✅"
 
-    fun sendOverdueReminder(
-        context: Context,
-        phoneNumber: String,
-        tenantName: String,
-        amount: Double,
-        pendingBalance: Double
-    ) {
-        val message = buildString {
-            append("Hi $tenantName,\n\n")
-            append("Your rent payment is overdue. ")
-            append("Pending balance: ")
-            append(CurrencyUtils.formatAmountCompact(pendingBalance))
-            append("\n\nPlease clear the dues at the earliest.\n\n")
-            append("Thank you! 🏠")
-        }
-        openWhatsApp(context, phoneNumber, message)
-    }
+    fun getDefaultOverdueReminderTemplate(): String =
+        "Hi {tenantName},\n\nYour rent payment is overdue. Pending balance: {pendingBalance}\n\nPlease clear the dues at the earliest.\n\nThank you! \uD83C\uDFE0"
 
     fun sendCustomMessage(context: Context, phoneNumber: String, message: String) {
         openWhatsApp(context, phoneNumber, message)
