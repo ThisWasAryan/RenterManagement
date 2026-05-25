@@ -1,53 +1,87 @@
-# RMS — Rent Management System (V2)
+# Rent Management System (RMS) - V3 Stable
 
-RMS is an Android application for landlords and small property owners to manage tenants, rent operations, utility readings, reminders, and related records in one place.
+Welcome to the **Rent Management System (RMS)**! RMS is a complete, offline-first digital ledger built for landlords, property managers, and small property owners. Say goodbye to scattered paper notebooks, lost receipts, and messy WhatsApp logs. RMS puts everything you need to manage your rental properties directly into your pocket.
 
-## Current Release Status
+---
 
-**Version 2 (V2)** is the current major release. This version addresses all critical limitations found in V1 and introduces several new features for a complete property management experience.
+## 📥 Download
 
-## V2 Improvements & Comparison
+The latest stable Android APK is available in the Releases section.
 
-V2 represents a significant leap from the initial release, focusing on workflow reliability and feature completeness.
+**Download:** [RMS-v3-stable.apk](releases/latest) *(Available in GitHub Releases)*
 
-| Feature | Version 1 (V1) | Version 2 (V2) |
-| :--- | :--- | :--- |
-| **Rent Payments** | Recording not fully functional | **Fully functional** recording flow with support for partial payments, payment modes, and month selection. |
-| **Document Management** | Metadata only; no file uploads | **Full support** for uploading images (Gallery/Camera) and PDF/Doc files for agreements and IDs. |
-| **User Interface** | UI alignment issues in key forms | **Refined form layouts** with better grouping, sectioning (using Section Headers), and consistent Material 3 spacing. |
-| **Theme Support** | Theme toggle not working | **Fully functional Dark/Light/System theme** switching via Settings. |
-| **Utility Tracking** | Basic electricity reading | **Enhanced Electricity management** with rate configuration and meter photo attachments. |
-| **Communications** | Manual reminders only | **WhatsApp Templates** for quick automated messaging to tenants for rent due or receipts. |
+---
 
-## Key Capabilities
+## ✨ Features at a Glance
 
-- **Tenant & Property Management**: Track multiple properties and rooms with detailed tenant profiles including Aadhaar/PAN details.
-- **Payment History**: Full history of rent payments with status tracking (Paid/Pending/Overdue).
-- **Electricity Reading Management**: Record meter readings, calculate bills based on custom rates, and store proof images.
-- **Document Vault**: Securely store digital copies of rental agreements, ID cards, and other essential documents.
-- **Reminder & Follow-up**: Automated and manual reminders for rent due dates and agreement expiries.
-- **Offline-First Storage**: All data is stored locally using Room Database, ensuring 100% privacy and offline availability.
+RMS is built to handle all the practical, day-to-day operations of managing tenants:
 
-## Technology Stack
+### 🏠 Tenant & Room Management
+- **Add Tenants Easily:** Store essential details like Move-In Date, Aadhaar/PAN, Security Deposit, and Contact Information.
+- **Room Assignments:** Manage multiple rooms/properties and effortlessly assign tenants to them.
+- **Deactivation:** Safely deactivate a tenant when they move out without losing their historical records.
 
-- **Kotlin + Jetpack Compose**: Modern declarative UI framework.
-- **MVVM Architecture**: Clean, scalable, and testable code structure.
-- **Room Database + DAO**: Robust local data persistence.
-- **Hilt**: Modern dependency injection.
-- **DataStore**: For user preferences like Theme modes and default rates.
-- **WorkManager**: Reliability for background reminder scheduling.
-- **Coil**: Smooth image loading for document previews.
+### 💰 Automated Rent Logic
+- **Smart Billing Cycles:** Rent is smartly tracked based on the tenant's exact **Move-In Date** (not arbitrary calendar months). A tenant's cycle only becomes "Due" after a full month has passed.
+- **Precise Balances:** The system accurately tracks exactly how much rent is pending, preventing you from manually calculating months and partial payments.
+- **Advance Payments:** Tenants can pay rent in advance, and the system correctly allocates it to the upcoming cycle while strictly preventing accidental duplicate advance entries.
 
-## Build and Run
+### ⚡ Electricity & Utility Tracking
+- **Meter Readings:** Log previous and current meter readings to automatically calculate electricity consumed.
+- **Photo Evidence:** Snap and attach photos of the electricity meter for undeniable proof.
+- **Custom Rates:** Configure per-unit electricity rates for each tenant or property.
 
-1. Open the project in **Android Studio**.
-2. Sync Gradle dependencies.
-3. Build debug APK:
+### 📱 One-Tap WhatsApp Reminders
+- **Template Messaging:** Send fully formatted WhatsApp reminders (Rent Due, Electricity Bills, Payment Confirmations) directly from the app.
+- **Dynamic Placeholders:** Messages automatically populate with the tenant's name, precise pending rent, exact units consumed, and current/previous meter readings. 
+
+### 📁 Digital Document Vault
+- **Attach Files:** Upload PDFs, documents, and photos directly from your phone.
+- **Organized Storage:** Store Rental Agreements, ID Proofs, and more on a per-tenant basis for instant access anywhere.
+
+### 🎨 Beautiful & Accessible UI
+- **Modern Design:** Built with modern Android standards featuring beautiful typography, easy-to-read cards, and intuitive navigation.
+- **Dark Mode Support:** Fully supports Light, Dark, and System-default themes.
+
+---
+
+## 🛠️ Technical Details & Architecture
+
+RMS is a native Android application built with modern architecture components and robust engineering practices. It relies on a local-first philosophy to ensure complete offline functionality and zero data privacy concerns.
+
+### Tech Stack
+- **UI Framework:** Kotlin + Jetpack Compose (Material 3)
+- **Architecture Pattern:** MVVM (Model-View-ViewModel) + Clean Architecture principles
+- **Local Database:** Room persistence library + DAOs (Data Access Objects)
+- **Dependency Injection:** Hilt / Dagger
+- **State Management:** StateFlow / SharedFlow / Coroutines for reactive, async programming
+- **Preferences:** Jetpack DataStore (Preferences)
+- **Image/Document Handling:** Coil (for image loading/caching) and Android `ContentResolver` (for local URI persistence)
+
+### V3 Stable Improvements
+Version 3 finalizes the core workflows to ensure the app is highly robust for real-world deployments:
+- **Billing Engine Overhaul:** Reworked rent calculations from arbitrary calendar-month validations to true elapsed billing cycles using `DateUtils` utilities spanning off the tenant's `moveInDate`. 
+- **Instant Reactive UI:** Upgraded Compose `LaunchedEffect` hooks and Flow combiners in ViewModels (like `HomeViewModel`) to instantly refresh summary metrics and lists without requiring a restart.
+- **UI State Protections:** Implemented strict ViewModel rules to enforce correct UI states (e.g., locking out the "Record Payment" bottom sheet if advance cycles are fully paid, preventing overpayment).
+- **Advanced Template System:** Enhanced the `WhatsAppHelper` integration to dynamically resolve deep variables (like `{previousReading}` and `{currentReading}`) before firing intents.
+
+### Building from Source
+
+To compile and build RMS from source:
+
+1. Clone the repository and open the project in **Android Studio**.
+2. Sync the Gradle dependencies.
+3. To build a debug APK, run the following Gradle task via the terminal or Android Studio's Gradle panel:
    ```bash
    ./gradlew assembleDebug
    ```
-4. Run on an emulator or physical device (API 26+).
+4. Or, to generate a signed release APK:
+   ```bash
+   ./gradlew assembleRelease
+   ```
+5. Deploy to an emulator or physical device running Android API 26 or higher.
 
-## License
+---
 
-This project is for management of rental properties.
+### License
+This project is built for rental property management and provided as-is.
