@@ -21,14 +21,30 @@ import com.rms.app.core.ui.components.RMSBottomNavBar
 import com.rms.app.core.ui.components.bottomNavItems
 import com.rms.app.core.ui.theme.RMSTheme
 import dagger.hilt.android.AndroidEntryPoint
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.rms.app.core.ui.theme.ThemeManager
+import com.rms.app.core.ui.theme.ThemeMode
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    @Inject
+    lateinit var themeManager: ThemeManager
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            RMSTheme(darkTheme = true) {
+            val themeMode by themeManager.themeMode.collectAsStateWithLifecycle(initialValue = ThemeMode.SYSTEM)
+            val isDark = when (themeMode) {
+                ThemeMode.LIGHT -> false
+                ThemeMode.DARK -> true
+                ThemeMode.SYSTEM -> isSystemInDarkTheme()
+            }
+
+            RMSTheme(darkTheme = isDark) {
                 RMSApp()
             }
         }

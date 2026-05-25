@@ -12,7 +12,8 @@ class HomeRepository @Inject constructor(
     private val tenantDao: TenantDao,
     private val paymentDao: PaymentDao,
     private val electricityReadingDao: ElectricityReadingDao,
-    private val roomDao: RoomDao
+    private val roomDao: RoomDao,
+    private val whatsappTemplateDao: WhatsAppTemplateDao
 ) {
     fun getActiveTenantsWithRooms(): Flow<List<TenantWithRoom>> =
         tenantDao.getActiveTenantsWithRooms()
@@ -37,4 +38,22 @@ class HomeRepository @Inject constructor(
 
     fun getUnpaidElectricityTotal(tenantId: Long): Flow<Double?> =
         electricityReadingDao.getUnpaidElectricityTotal(tenantId)
+
+    suspend fun getPaymentForMonth(tenantId: Long, month: Int, year: Int): Payment? =
+        paymentDao.getPaymentForMonth(tenantId, month, year)
+
+    suspend fun insertPayment(payment: Payment): Long =
+        paymentDao.insertPayment(payment)
+
+    suspend fun getTenantById(tenantId: Long): Tenant? =
+        tenantDao.getTenantById(tenantId)
+
+    suspend fun getRoomById(roomId: Long): Room? =
+        roomDao.getRoomById(roomId)
+
+    fun getTotalCollectedForMonth(month: Int, year: Int): Flow<Double?> =
+        paymentDao.getTotalCollectedForMonth(month, year)
+
+    suspend fun getTemplate(type: String): WhatsAppTemplate? =
+        whatsappTemplateDao.getTemplate(type)
 }

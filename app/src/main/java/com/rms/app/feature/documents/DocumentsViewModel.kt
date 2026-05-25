@@ -1,5 +1,6 @@
 package com.rms.app.feature.documents
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rms.app.core.model.entities.Document
@@ -17,6 +18,10 @@ data class DocumentsUiState(
     val agreements: List<Document> = emptyList(),
     val idDocuments: List<Document> = emptyList(),
     val meterPhotos: List<Document> = emptyList(),
+    val showUploadDialog: Boolean = false,
+    val selectedTenantId: Long? = null,
+    val selectedDocType: DocumentType = DocumentType.OTHER,
+    val pendingUri: Uri? = null,
     val error: String? = null
 )
 
@@ -60,6 +65,46 @@ class DocumentsViewModel @Inject constructor(
         viewModelScope.launch {
             documentRepository.getActiveTenants().collect { tenants ->
                 _uiState.update { it.copy(tenants = tenants) }
+            }
+        }
+    }
+
+    fun onFileSelected(uri: Uri) {
+        _uiState.update { it.copy(pendingUri = uri, showUploadDialog = true) }
+    }
+
+    fun onTenantSelected(tenantId: Long) {
+        _uiState.update { it.copy(selectedTenantId = tenantId) }
+    }
+
+    fun onDocTypeSelected(type: DocumentType) {
+        _uiState.update { it.copy(selectedDocType = type) }
+    }
+
+    fun dismissUploadDialog() {
+        _uiState.update { it.copy(showUploadDialog = false, pendingUri = null) }
+    }
+
+    fun uploadDocument(name: String) {
+        val state = _uiState.value
+        val uri = state.pendingUri ?: return
+        val tenantId = state.selectedTenantId ?: return
+
+        viewModelScope.launch {
+            try {
+                val doc = Document(
+                    tenantId = tenantId,
+                    documentType = state.selectedDocType.name,
+                    name = name.ifBlank { state.selectedDocType.name },
+                    fileUri = uri.toString(),
+                    mimeType = null,
+                    fileSize = 0,
+                    createdAt = System.currentTimeMillis()
+                )
+                documentRepository.insertDocument(doc)
+                _uiState.update { it.copy(showUploadDialog = false, pendingUri = null) }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(error = e.message) }
             }
         }
     }

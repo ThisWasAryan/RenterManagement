@@ -35,4 +35,7 @@ interface ElectricityReadingDao {
 
     @Query("UPDATE electricity_readings SET isPaid = 1 WHERE id = :readingId")
     suspend fun markAsPaid(readingId: Long)
+
+    @Query("UPDATE electricity_readings SET isPaid = 1, paidDate = :paidDate, paymentMode = :mode WHERE id = :readingId")
+    suspend fun markAsPaidWithDetails(readingId: Long, paidDate: Long, mode: String)
 }

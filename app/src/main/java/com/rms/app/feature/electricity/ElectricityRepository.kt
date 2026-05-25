@@ -24,4 +24,13 @@ class ElectricityRepository @Inject constructor(
 
     suspend fun getTenantById(tenantId: Long): Tenant? =
         tenantDao.getTenantById(tenantId)
+
+    suspend fun markAsPaidWithDetails(readingId: Long, paidDate: Long, mode: String) =
+        electricityReadingDao.markAsPaidWithDetails(readingId, paidDate, mode)
+
+    fun getUnpaidReadings(tenantId: Long): Flow<List<ElectricityReading>> =
+        electricityReadingDao.getUnpaidReadings(tenantId)
+
+    fun getUnpaidTotal(tenantId: Long): Flow<Double?> =
+        electricityReadingDao.getUnpaidElectricityTotal(tenantId)
 }

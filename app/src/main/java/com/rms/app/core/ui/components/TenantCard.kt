@@ -58,7 +58,11 @@ fun TenantCard(
         lastPayment.forMonth == DateUtils.getCurrentMonth() &&
         lastPayment.forYear == DateUtils.getCurrentYear()
     val isDue = !isPaid
-    val monthlyRent = room?.monthlyRent ?: 0.0
+    val monthlyRent = when {
+        tenant.monthlyRent > 0 -> tenant.monthlyRent
+        (room?.monthlyRent ?: 0.0) > 0 -> room?.monthlyRent ?: 0.0
+        else -> 0.0
+    }
 
     Card(
         modifier = modifier

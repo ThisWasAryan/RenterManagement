@@ -31,5 +31,7 @@ data class ElectricityReading(
     val forMonth: Int,
     val forYear: Int,
     val isPaid: Boolean = false,
+    val paidDate: Long? = null,
+    val paymentMode: String? = null,
     val createdAt: Long = System.currentTimeMillis()
 )

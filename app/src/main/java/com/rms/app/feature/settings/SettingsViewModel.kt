@@ -8,13 +8,15 @@ import com.rms.app.core.database.dao.PropertyDao
 import com.rms.app.core.database.dao.RoomDao
 import com.rms.app.core.model.entities.Property
 import com.rms.app.core.model.entities.Room
+import com.rms.app.core.ui.theme.ThemeManager
+import com.rms.app.core.ui.theme.ThemeMode
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class SettingsUiState(
-    val isDarkMode: Boolean = true,
+    val themeMode: ThemeMode = ThemeMode.DARK,
     val defaultRent: String = "10000",
     val electricityRate: String = "8",
     val properties: List<Property> = emptyList(),
@@ -26,12 +28,12 @@ data class SettingsUiState(
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val dataStore: DataStore<Preferences>,
+    private val themeManager: ThemeManager,
     private val propertyDao: PropertyDao,
     private val roomDao: RoomDao
 ) : ViewModel() {
 
     companion object {
-        val DARK_MODE_KEY = booleanPreferencesKey("dark_mode")
         val DEFAULT_RENT_KEY = stringPreferencesKey("default_rent")
         val ELECTRICITY_RATE_KEY = stringPreferencesKey("electricity_rate")
     }
@@ -50,11 +52,15 @@ class SettingsViewModel @Inject constructor(
             dataStore.data.collect { prefs ->
                 _uiState.update {
                     it.copy(
-                        isDarkMode = prefs[DARK_MODE_KEY] ?: true,
                         defaultRent = prefs[DEFAULT_RENT_KEY] ?: "10000",
                         electricityRate = prefs[ELECTRICITY_RATE_KEY] ?: "8"
                     )
                 }
+            }
+        }
+        viewModelScope.launch {
+            themeManager.themeMode.collect { mode ->
+                _uiState.update { it.copy(themeMode = mode) }
             }
         }
     }
@@ -75,12 +81,9 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun toggleDarkMode() {
+    fun updateThemeMode(mode: ThemeMode) {
         viewModelScope.launch {
-            dataStore.edit { prefs ->
-                val current = prefs[DARK_MODE_KEY] ?: true
-                prefs[DARK_MODE_KEY] = !current
-            }
+            themeManager.setThemeMode(mode)
         }
     }
 

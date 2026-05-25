@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import com.rms.app.core.model.enums.PaymentMode
 import com.rms.app.core.ui.components.EmptyState
 import com.rms.app.core.ui.components.LoadingState
 import com.rms.app.core.ui.components.StatusChip
@@ -27,6 +28,7 @@ import com.rms.app.core.ui.theme.*
 import com.rms.app.core.util.CurrencyUtils
 import com.rms.app.core.util.DateUtils
 import com.rms.app.core.util.WhatsAppHelper
+import com.rms.app.feature.payment.RecordPaymentSheet
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,6 +39,7 @@ fun TenantDetailScreen(
     viewModel: TenantDetailViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val paymentData by viewModel.paymentData.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val tabs = listOf("Overview", "Payments", "Electricity", "Documents")
 
@@ -152,6 +155,34 @@ fun TenantDetailScreen(
                 }
             }
 
+            // Quick actions row
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Button(
+                    onClick = { viewModel.openPaymentSheet() },
+                    modifier = Modifier.weight(1f),
+                    shape = MaterialTheme.shapes.medium,
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    Icon(Icons.Filled.Payment, null, Modifier.size(16.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("Record Payment", style = MaterialTheme.typography.labelMedium)
+                }
+                OutlinedButton(
+                    onClick = { onAddReading(tenant.id) },
+                    modifier = Modifier.weight(1f),
+                    shape = MaterialTheme.shapes.medium
+                ) {
+                    Icon(Icons.Filled.ElectricMeter, null, Modifier.size(16.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("Add Reading", style = MaterialTheme.typography.labelMedium)
+                }
+            }
+
             // Tabs
             TabRow(
                 selectedTabIndex = uiState.selectedTab,
@@ -171,32 +202,103 @@ fun TenantDetailScreen(
             when (uiState.selectedTab) {
                 0 -> OverviewTab(tenant, room)
                 1 -> PaymentsTab(uiState.payments)
-                2 -> ElectricityTab(uiState.electricityReadings, onAddReading = { onAddReading(tenant.id) })
+                2 -> ElectricityTab(
+                    readings = uiState.electricityReadings,
+                    onAddReading = { onAddReading(tenant.id) },
+                    onMarkPaid = { readingId -> viewModel.showElectricityPayDialog(readingId) }
+                )
                 3 -> DocumentsTab(uiState.documents)
             }
         }
+    }
+
+    // Record Payment Bottom Sheet
+    if (uiState.showPaymentSheet) {
+        RecordPaymentSheet(
+            data = paymentData,
+            onAmountChange = viewModel::onPaymentAmountChange,
+            onModeChange = viewModel::onPaymentModeChange,
+            onMonthChange = viewModel::onPaymentMonthChange,
+            onYearChange = viewModel::onPaymentYearChange,
+            onNotesChange = viewModel::onPaymentNotesChange,
+            onSave = viewModel::savePayment,
+            onDismiss = viewModel::dismissPaymentSheet
+        )
+    }
+
+    // Electricity Payment Dialog
+    if (uiState.showElectricityPayDialog) {
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissElectricityPayDialog() },
+            title = { Text("Mark as Paid") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("Select payment method:", style = MaterialTheme.typography.bodyMedium)
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        PaymentMode.entries.take(3).forEach { mode ->
+                            FilterChip(
+                                selected = uiState.electricityPayMode == mode,
+                                onClick = { viewModel.onElectricityPayModeChange(mode) },
+                                label = { Text(mode.displayName, style = MaterialTheme.typography.labelSmall) }
+                            )
+                        }
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        PaymentMode.entries.drop(3).forEach { mode ->
+                            FilterChip(
+                                selected = uiState.electricityPayMode == mode,
+                                onClick = { viewModel.onElectricityPayModeChange(mode) },
+                                label = { Text(mode.displayName, style = MaterialTheme.typography.labelSmall) }
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(onClick = { viewModel.markElectricityPaid() }) {
+                    Text("Mark Paid")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.dismissElectricityPayDialog() }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
 
 @Composable
 private fun OverviewTab(tenant: com.rms.app.core.model.entities.Tenant, room: com.rms.app.core.model.entities.Room?) {
+    val effectiveRent = when {
+        tenant.monthlyRent > 0 -> tenant.monthlyRent
+        (room?.monthlyRent ?: 0.0) > 0 -> room?.monthlyRent ?: 0.0
+        else -> 0.0
+    }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
+            DetailCard("Rent Details") {
+                DetailRow("Monthly Rent", CurrencyUtils.formatAmountCompact(effectiveRent))
+                DetailRow("Due Day", "${tenant.rentDueDay} of every month")
+                DetailRow("Electricity Rate", "₹${tenant.electricityRate}/unit")
+                DetailRow("Security Deposit", CurrencyUtils.formatAmountCompact(tenant.advanceDeposit))
+            }
+        }
+        item {
             DetailCard("Room Details") {
                 DetailRow("Room Number", room?.roomNumber ?: "—")
-                DetailRow("Floor", room?.floor ?: "—")
-                DetailRow("Monthly Rent", room?.monthlyRent?.let { CurrencyUtils.formatAmountCompact(it) } ?: "—")
-                DetailRow("Security Deposit", room?.securityDeposit?.let { CurrencyUtils.formatAmountCompact(it) } ?: "—")
+                DetailRow("Floor", room?.floor?.ifBlank { "—" } ?: "—")
+                DetailRow("Status", room?.status ?: "—")
             }
         }
         item {
             DetailCard("Agreement") {
                 DetailRow("Move-in Date", tenant.moveInDate?.let { DateUtils.formatFullDate(it) } ?: "—")
-                DetailRow("Advance Deposit", CurrencyUtils.formatAmountCompact(tenant.advanceDeposit))
                 DetailRow("Aadhaar", tenant.aadhaarNumber ?: "—")
                 DetailRow("PAN", tenant.panNumber ?: "—")
             }
@@ -234,6 +336,9 @@ private fun PaymentsTab(payments: List<com.rms.app.core.model.entities.Payment>)
                             Text(DateUtils.formatMonthYear(payment.forMonth, payment.forYear), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
                             Text(DateUtils.formatFullDate(payment.paymentDate), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Text(payment.mode, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            payment.notes?.let {
+                                Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
                         }
                         Column(horizontalAlignment = Alignment.End) {
                             Text(CurrencyUtils.formatAmountCompact(payment.amount), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Success)
@@ -247,7 +352,11 @@ private fun PaymentsTab(payments: List<com.rms.app.core.model.entities.Payment>)
 }
 
 @Composable
-private fun ElectricityTab(readings: List<com.rms.app.core.model.entities.ElectricityReading>, onAddReading: () -> Unit) {
+private fun ElectricityTab(
+    readings: List<com.rms.app.core.model.entities.ElectricityReading>,
+    onAddReading: () -> Unit,
+    onMarkPaid: (Long) -> Unit
+) {
     if (readings.isEmpty()) {
         EmptyState(icon = Icons.Outlined.ElectricMeter, title = "No readings yet", subtitle = "Add the first meter reading", actionText = "Add Reading", onAction = onAddReading)
     } else {
@@ -266,12 +375,28 @@ private fun ElectricityTab(readings: List<com.rms.app.core.model.entities.Electr
                             StatusChip(text = if (reading.isPaid) "Paid" else "Unpaid", color = if (reading.isPaid) Success else Error)
                         }
                         Spacer(Modifier.height(8.dp))
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                             Column {
                                 Text("${reading.previousReading.toInt()} → ${reading.currentReading.toInt()}", style = MaterialTheme.typography.bodyMedium)
                                 Text("${reading.unitsConsumed.toInt()} units × ₹${reading.ratePerUnit.toInt()}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                if (reading.isPaid && reading.paymentMode != null) {
+                                    Text("Paid via ${reading.paymentMode}", style = MaterialTheme.typography.labelSmall, color = Success)
+                                }
                             }
-                            Text(CurrencyUtils.formatAmountCompact(reading.totalAmount), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text(CurrencyUtils.formatAmountCompact(reading.totalAmount), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                                if (!reading.isPaid) {
+                                    Spacer(Modifier.height(4.dp))
+                                    FilledTonalButton(
+                                        onClick = { onMarkPaid(reading.id) },
+                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                                    ) {
+                                        Icon(Icons.Filled.CheckCircle, null, Modifier.size(14.dp))
+                                        Spacer(Modifier.width(4.dp))
+                                        Text("Mark Paid", style = MaterialTheme.typography.labelSmall)
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -300,6 +425,7 @@ private fun DocumentsTab(documents: List<com.rms.app.core.model.entities.Documen
                         Column(Modifier.weight(1f)) {
                             Text(doc.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
                             Text(doc.documentType, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(DateUtils.formatFullDate(doc.createdAt), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         TextButton(onClick = { /* TODO: open document */ }) { Text("View") }
                     }

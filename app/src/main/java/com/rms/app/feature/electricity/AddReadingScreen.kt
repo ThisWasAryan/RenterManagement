@@ -133,15 +133,23 @@ fun AddReadingScreen(
                 }
             }
 
-            // Meter photo placeholder
+            // Meter photo picker
+            val imagePickerLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+                contract = androidx.activity.result.contract.ActivityResultContracts.GetContent()
+            ) { uri ->
+                if (uri != null) {
+                    viewModel.onMeterPhotoSelected(uri.toString())
+                }
+            }
+
             OutlinedButton(
-                onClick = { /* TODO: CameraX integration */ },
+                onClick = { imagePickerLauncher.launch("image/*") },
                 modifier = Modifier.fillMaxWidth().height(48.dp),
                 shape = MaterialTheme.shapes.medium
             ) {
-                Icon(Icons.Filled.CameraAlt, null, Modifier.size(18.dp))
+                Icon(if (uiState.meterPhotoUri != null) Icons.Filled.CheckCircle else Icons.Filled.CameraAlt, null, Modifier.size(18.dp), tint = if (uiState.meterPhotoUri != null) Success else LocalContentColor.current)
                 Spacer(Modifier.width(8.dp))
-                Text("Take Meter Photo")
+                Text(if (uiState.meterPhotoUri != null) "Photo Selected" else "Add Meter Photo")
             }
 
             uiState.error?.let {

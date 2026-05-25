@@ -32,6 +32,9 @@ data class Tenant(
     val agreementStartDate: Long? = null,
     val agreementEndDate: Long? = null,
     val advanceDeposit: Double = 0.0,
+    val monthlyRent: Double = 0.0,
+    val rentDueDay: Int = 1,
+    val electricityRate: Double = 8.0,
     val notes: String? = null,
     val isActive: Boolean = true,
     val createdAt: Long = System.currentTimeMillis()

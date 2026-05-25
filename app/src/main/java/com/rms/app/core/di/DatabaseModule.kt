@@ -6,6 +6,7 @@ import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.rms.app.core.database.RMSDatabase
 import com.rms.app.core.database.dao.*
+import com.rms.app.core.model.entities.WhatsAppTemplate
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -21,6 +22,9 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
 
+    @Volatile
+    private var INSTANCE: RMSDatabase? = null
+
     @Provides
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): RMSDatabase {
@@ -32,11 +36,23 @@ object DatabaseModule {
             .addCallback(object : RoomDatabase.Callback() {
                 override fun onCreate(db: SupportSQLiteDatabase) {
                     super.onCreate(db)
-                    // Seed default property on first launch
                     CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+                        // Seed default property
                         db.execSQL(
                             "INSERT INTO properties (name, address, type, createdAt) VALUES ('My Property', '', 'residential', ${System.currentTimeMillis()})"
                         )
+                        // Seed default WhatsApp templates
+                        val templates = listOf(
+                            "rent_due" to "Hi {tenantName},\n\nThis is a friendly reminder that your rent of {amountDue} for {month} is due.\n\nPlease make the payment at your earliest convenience.\n\nThank you! 🏠",
+                            "overdue" to "Hi {tenantName},\n\nYour rent payment is overdue. Pending balance: {amountDue}\n\nPlease clear the dues at the earliest.\n\nThank you! 🏠",
+                            "electricity_due" to "Hi {tenantName},\n\nYour electricity bill of {amountDue} for {month} is pending.\n\nUnits consumed: {units}\nRate: {rate}/unit\n\nPlease pay at your convenience.\n\nThank you! ⚡",
+                            "payment_confirmation" to "Hi {tenantName},\n\nYour rent payment of {amountDue} for {month} has been received.\n\nThank you! ✅"
+                        )
+                        templates.forEach { (type, msg) ->
+                            db.execSQL(
+                                "INSERT INTO whatsapp_templates (templateType, messageTemplate, updatedAt) VALUES ('$type', '${msg.replace("'", "''")}', ${System.currentTimeMillis()})"
+                            )
+                        }
                     }
                 }
             })
@@ -53,4 +69,5 @@ object DatabaseModule {
     @Provides fun provideExpenseDao(db: RMSDatabase): ExpenseDao = db.expenseDao()
     @Provides fun provideReminderDao(db: RMSDatabase): ReminderDao = db.reminderDao()
     @Provides fun provideMaintenanceLogDao(db: RMSDatabase): MaintenanceLogDao = db.maintenanceLogDao()
+    @Provides fun provideWhatsAppTemplateDao(db: RMSDatabase): WhatsAppTemplateDao = db.whatsAppTemplateDao()
 }

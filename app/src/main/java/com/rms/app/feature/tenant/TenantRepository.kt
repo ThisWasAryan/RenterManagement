@@ -54,4 +54,19 @@ class TenantRepository @Inject constructor(
 
     suspend fun updateRoomStatus(roomId: Long, status: String) =
         roomDao.updateRoomStatus(roomId, status)
+
+    suspend fun insertRoom(room: Room): Long =
+        roomDao.insertRoom(room)
+
+    suspend fun getRoomById(roomId: Long): Room? =
+        roomDao.getRoomById(roomId)
+
+    suspend fun insertPayment(payment: Payment): Long =
+        paymentDao.insertPayment(payment)
+
+    suspend fun markElectricityPaid(readingId: Long, paidDate: Long, mode: String) =
+        electricityReadingDao.markAsPaidWithDetails(readingId, paidDate, mode)
+
+    suspend fun insertDocument(document: Document): Long =
+        documentDao.insertDocument(document)
 }

@@ -4,7 +4,10 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rms.app.core.model.entities.*
+import com.rms.app.core.model.enums.PaymentMode
 import com.rms.app.core.model.relations.TenantWithRoom
+import com.rms.app.core.util.DateUtils
+import com.rms.app.feature.payment.RecordPaymentData
 import com.rms.app.feature.tenant.TenantRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
@@ -20,7 +23,13 @@ data class TenantDetailUiState(
     val expenses: List<Expense> = emptyList(),
     val maintenanceLogs: List<MaintenanceLog> = emptyList(),
     val selectedTab: Int = 0,
-    val error: String? = null
+    val error: String? = null,
+    // Payment sheet
+    val showPaymentSheet: Boolean = false,
+    // Electricity payment dialog
+    val showElectricityPayDialog: Boolean = false,
+    val selectedReadingId: Long = 0,
+    val electricityPayMode: PaymentMode = PaymentMode.CASH
 )
 
 @HiltViewModel
@@ -33,6 +42,10 @@ class TenantDetailViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(TenantDetailUiState())
     val uiState: StateFlow<TenantDetailUiState> = _uiState.asStateFlow()
+
+    // Payment sheet data
+    private val _paymentData = MutableStateFlow(RecordPaymentData())
+    val paymentData: StateFlow<RecordPaymentData> = _paymentData.asStateFlow()
 
     init {
         loadTenantDetails()
@@ -80,6 +93,114 @@ class TenantDetailViewModel @Inject constructor(
     fun deactivateTenant() {
         viewModelScope.launch {
             tenantRepository.deactivateTenant(tenantId)
+        }
+    }
+
+    // --- Payment Recording ---
+
+    fun openPaymentSheet() {
+        viewModelScope.launch {
+            val tenant = tenantRepository.getTenantById(tenantId)
+            val room = tenant?.roomId?.let { tenantRepository.getRoomById(it) }
+            val effectiveRent = when {
+                (tenant?.monthlyRent ?: 0.0) > 0 -> tenant?.monthlyRent ?: 0.0
+                (room?.monthlyRent ?: 0.0) > 0 -> room?.monthlyRent ?: 0.0
+                else -> 0.0
+            }
+
+            _paymentData.value = RecordPaymentData(
+                tenantId = tenantId,
+                tenantName = tenant?.name ?: "",
+                roomNumber = room?.roomNumber ?: "",
+                suggestedAmount = effectiveRent,
+                amount = if (effectiveRent > 0) effectiveRent.toInt().toString() else "",
+                forMonth = DateUtils.getCurrentMonth(),
+                forYear = DateUtils.getCurrentYear()
+            )
+            _uiState.update { it.copy(showPaymentSheet = true) }
+        }
+    }
+
+    fun dismissPaymentSheet() {
+        _uiState.update { it.copy(showPaymentSheet = false) }
+    }
+
+    fun onPaymentAmountChange(amount: String) {
+        _paymentData.update { it.copy(amount = amount, error = null) }
+    }
+
+    fun onPaymentModeChange(mode: PaymentMode) {
+        _paymentData.update { it.copy(paymentMode = mode) }
+    }
+
+    fun onPaymentMonthChange(month: Int) {
+        _paymentData.update { it.copy(forMonth = month) }
+    }
+
+    fun onPaymentYearChange(year: Int) {
+        _paymentData.update { it.copy(forYear = year) }
+    }
+
+    fun onPaymentNotesChange(notes: String) {
+        _paymentData.update { it.copy(notes = notes) }
+    }
+
+    fun savePayment() {
+        val data = _paymentData.value
+        val amount = data.amount.toDoubleOrNull()
+        if (amount == null || amount <= 0) {
+            _paymentData.update { it.copy(error = "Enter a valid amount") }
+            return
+        }
+
+        viewModelScope.launch {
+            _paymentData.update { it.copy(isSaving = true, error = null) }
+            try {
+                val payment = Payment(
+                    tenantId = tenantId,
+                    amount = amount,
+                    type = "RENT",
+                    mode = data.paymentMode.name,
+                    paymentDate = System.currentTimeMillis(),
+                    forMonth = data.forMonth,
+                    forYear = data.forYear,
+                    notes = data.notes.ifBlank { null }
+                )
+                tenantRepository.insertPayment(payment)
+                _paymentData.update { it.copy(isSaving = false) }
+                _uiState.update { it.copy(showPaymentSheet = false) }
+            } catch (e: Exception) {
+                _paymentData.update { it.copy(isSaving = false, error = e.message) }
+            }
+        }
+    }
+
+    // --- Electricity Payment ---
+
+    fun showElectricityPayDialog(readingId: Long) {
+        _uiState.update { it.copy(showElectricityPayDialog = true, selectedReadingId = readingId) }
+    }
+
+    fun dismissElectricityPayDialog() {
+        _uiState.update { it.copy(showElectricityPayDialog = false, selectedReadingId = 0) }
+    }
+
+    fun onElectricityPayModeChange(mode: PaymentMode) {
+        _uiState.update { it.copy(electricityPayMode = mode) }
+    }
+
+    fun markElectricityPaid() {
+        val readingId = _uiState.value.selectedReadingId
+        val mode = _uiState.value.electricityPayMode
+        if (readingId <= 0) return
+
+        viewModelScope.launch {
+            try {
+                tenantRepository.markElectricityPaid(readingId, System.currentTimeMillis(), mode.name)
+                _uiState.update { it.copy(showElectricityPayDialog = false, selectedReadingId = 0) }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(error = e.message) }
+            }
         }
     }
 }
