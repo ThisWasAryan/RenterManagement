@@ -37,6 +37,9 @@ data class AddTenantUiState(
     val useExistingRoom: Boolean = false,
     val selectedPropertyId: Long? = null,
     val newPropertyName: String = "",
+    val newPropertyAddress: String = "",
+    val roomFloor: String = "",
+    val roomNotes: String = "",
     val sameAsPhone: Boolean = false,
     val isEditing: Boolean = false,
     val isSaving: Boolean = false,
@@ -131,6 +134,7 @@ class AddTenantViewModel @Inject constructor(
     fun onEmailChange(email: String) { _uiState.update { it.copy(email = email) } }
     fun onPropertySelected(propertyId: Long?) { _uiState.update { it.copy(selectedPropertyId = propertyId) } }
     fun onNewPropertyNameChange(name: String) { _uiState.update { it.copy(newPropertyName = name, selectedPropertyId = null) } }
+    fun onNewPropertyAddressChange(address: String) { _uiState.update { it.copy(newPropertyAddress = address, selectedPropertyId = null) } }
     fun onRoomSelected(roomId: Long?) {
         _uiState.update {
             val room = it.availableRooms.find { r -> r.id == roomId }
@@ -143,6 +147,8 @@ class AddTenantViewModel @Inject constructor(
         }
     }
     fun onRoomNumberChange(number: String) { _uiState.update { it.copy(roomNumber = number, selectedRoomId = null, useExistingRoom = false) } }
+    fun onRoomFloorChange(floor: String) { _uiState.update { it.copy(roomFloor = floor, selectedRoomId = null, useExistingRoom = false) } }
+    fun onRoomNotesChange(notes: String) { _uiState.update { it.copy(roomNotes = notes, selectedRoomId = null, useExistingRoom = false) } }
     fun onMonthlyRentChange(rent: String) { _uiState.update { it.copy(monthlyRent = rent) } }
     fun onDepositChange(deposit: String) { _uiState.update { it.copy(advanceDeposit = deposit) } }
     fun onElectricityRateChange(rate: String) { _uiState.update { it.copy(electricityRate = rate) } }
@@ -169,7 +175,7 @@ class AddTenantViewModel @Inject constructor(
                     var propId = state.selectedPropertyId
                     if (propId == null) {
                         if (state.newPropertyName.isNotBlank()) {
-                            propId = propertyDao.insertProperty(Property(name = state.newPropertyName, address = ""))
+                            propId = propertyDao.insertProperty(Property(name = state.newPropertyName.trim(), address = state.newPropertyAddress.trim()))
                         } else {
                             // Default property if none provided
                             val existingProps = propertyDao.getAllProperties().first()
@@ -184,7 +190,7 @@ class AddTenantViewModel @Inject constructor(
                     val newRoom = Room(
                         propertyId = propId,
                         roomNumber = state.roomNumber.trim(),
-                        floor = "",
+                        floor = state.roomFloor.trim(),
                         monthlyRent = state.monthlyRent.toDoubleOrNull() ?: 0.0,
                         securityDeposit = state.advanceDeposit.toDoubleOrNull() ?: 0.0,
                         status = "occupied"

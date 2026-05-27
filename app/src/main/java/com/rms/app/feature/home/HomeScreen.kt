@@ -1,10 +1,13 @@
 package com.rms.app.feature.home
 
 import androidx.compose.animation.*
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.PersonAdd
@@ -167,18 +170,12 @@ fun HomeScreen(
                                 pendingBalance = cardData.pendingBalance,
                                 pendingElectricity = cardData.pendingElectricity,
                                 onRecordRent = {
-                                    val rentDue = cardData.pendingBalance > 0
                                     val elecDue = cardData.pendingElectricity > 0
                                     
-                                    if (rentDue && elecDue) {
+                                    if (elecDue) {
                                         viewModel.showPaymentSelection(cardData.tenantWithRoom.tenant.id)
-                                    } else if (rentDue) {
-                                        viewModel.openPaymentSheet(cardData.tenantWithRoom.tenant.id)
-                                    } else if (elecDue) {
-                                        val readingId = cardData.lastReading?.id ?: return@TenantCard
-                                        viewModel.showElectricityPayDialog(cardData.tenantWithRoom.tenant.id, readingId)
                                     } else {
-                                        android.widget.Toast.makeText(context, "All payments already completed.", android.widget.Toast.LENGTH_SHORT).show()
+                                        viewModel.openPaymentSheet(cardData.tenantWithRoom.tenant.id)
                                     }
                                 },
                                 onAddMeter = {
@@ -262,8 +259,10 @@ fun HomeScreen(
                     Text("Select Payment Mode:")
                     Spacer(modifier = Modifier.height(8.dp))
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         com.rms.app.core.model.enums.PaymentMode.entries.forEach { mode ->
                             FilterChip(
