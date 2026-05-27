@@ -55,9 +55,19 @@ class PaymentViewModel @Inject constructor(
             }
         }
         viewModelScope.launch {
-            val month = DateUtils.getCurrentMonth()
-            val year = DateUtils.getCurrentYear()
-            paymentRepository.getTotalCollectedForMonth(month, year).collect { total ->
+            val calendar = java.util.Calendar.getInstance()
+            calendar.set(java.util.Calendar.DAY_OF_MONTH, 1)
+            calendar.set(java.util.Calendar.HOUR_OF_DAY, 0)
+            calendar.set(java.util.Calendar.MINUTE, 0)
+            calendar.set(java.util.Calendar.SECOND, 0)
+            calendar.set(java.util.Calendar.MILLISECOND, 0)
+            val startOfMonth = calendar.timeInMillis
+
+            calendar.add(java.util.Calendar.MONTH, 1)
+            calendar.add(java.util.Calendar.MILLISECOND, -1)
+            val endOfMonth = calendar.timeInMillis
+            
+            paymentRepository.getTotalCollectedBetweenDates(startOfMonth, endOfMonth).collect { total ->
                 _uiState.update { it.copy(totalCollected = total ?: 0.0) }
             }
         }
