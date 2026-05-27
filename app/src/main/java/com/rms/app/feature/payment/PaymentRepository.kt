@@ -24,8 +24,8 @@ class PaymentRepository @Inject constructor(
     suspend fun deletePayment(payment: Payment) =
         paymentDao.deletePayment(payment)
 
-    fun getTotalCollectedForMonth(month: Int, year: Int): Flow<Double?> =
-        paymentDao.getTotalCollectedForMonth(month, year)
+    fun getTotalCollectedBetweenDates(startDate: Long, endDate: Long): Flow<Double?> =
+        paymentDao.getTotalCollectedBetweenDates(startDate, endDate)
 
     fun getActiveTenants(): Flow<List<Tenant>> = tenantDao.getActiveTenants()
 
