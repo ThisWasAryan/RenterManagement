@@ -301,7 +301,6 @@ fun AddTenantScreen(
                 ) {
                     DatePicker(state = datePickerState)
                 }
-            }
 
             OutlinedTextField(
                 value = uiState.advanceDeposit,
