@@ -138,12 +138,23 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun observeMonthlyCollection() {
+        val calendar = java.util.Calendar.getInstance()
+        calendar.set(java.util.Calendar.DAY_OF_MONTH, 1)
+        calendar.set(java.util.Calendar.HOUR_OF_DAY, 0)
+        calendar.set(java.util.Calendar.MINUTE, 0)
+        calendar.set(java.util.Calendar.SECOND, 0)
+        calendar.set(java.util.Calendar.MILLISECOND, 0)
+        val startOfMonth = calendar.timeInMillis
+
+        calendar.add(java.util.Calendar.MONTH, 1)
+        calendar.add(java.util.Calendar.MILLISECOND, -1)
+        val endOfMonth = calendar.timeInMillis
+
         viewModelScope.launch {
-            homeRepository.getTotalCollectedForMonth(
-                DateUtils.getCurrentMonth(), DateUtils.getCurrentYear()
-            ).collect { total ->
-                _uiState.update { it.copy(totalCollectedThisMonth = total ?: 0.0) }
-            }
+            homeRepository.getTotalCollectedBetweenDates(startOfMonth, endOfMonth)
+                .collect { total ->
+                    _uiState.update { it.copy(totalCollectedThisMonth = total ?: 0.0) }
+                }
         }
     }
 
@@ -271,8 +282,8 @@ class HomeViewModel @Inject constructor(
                 _paymentData.update { it.copy(isSaving = false) }
                 _showPaymentSheet.value = false
 
-                // Refresh tenant list
-                loadTenants()
+                // Trigger a refresh to automatically update all flows and pending totals
+                refresh()
             } catch (e: Exception) {
                 _paymentData.update { it.copy(isSaving = false, error = e.message) }
             }

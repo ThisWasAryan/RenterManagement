@@ -33,3 +33,12 @@ data class TenantWithElectricity(
     )
     val readings: List<ElectricityReading>
 )
+
+data class DocumentWithContext(
+    @Embedded val document: com.rms.app.core.model.entities.Document,
+    @Relation(
+        parentColumn = "tenantId",
+        entityColumn = "id"
+    )
+    val tenant: com.rms.app.core.model.entities.Tenant?
+)

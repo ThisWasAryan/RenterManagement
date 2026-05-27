@@ -54,8 +54,8 @@ class HomeRepository @Inject constructor(
     suspend fun getRoomById(roomId: Long): Room? =
         roomDao.getRoomById(roomId)
 
-    fun getTotalCollectedForMonth(month: Int, year: Int): Flow<Double?> =
-        paymentDao.getTotalCollectedForMonth(month, year)
+    fun getTotalCollectedBetweenDates(startDate: Long, endDate: Long): Flow<Double?> =
+        paymentDao.getTotalCollectedBetweenDates(startDate, endDate)
 
     suspend fun getTemplate(type: String): WhatsAppTemplate? =
         whatsappTemplateDao.getTemplate(type)
