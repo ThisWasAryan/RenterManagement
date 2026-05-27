@@ -413,8 +413,7 @@ private fun OverviewTab(tenant: com.rms.app.core.model.entities.Tenant, room: co
     ) {
         item {
             DetailCard("Rent Details") {
-                DetailRow("Monthly Rent", CurrencyUtils.formatAmountCompact(effectiveRent))
-                DetailRow("Due Day", "${tenant.rentDueDay} of every month")
+                DetailRow("Rent Amount", CurrencyUtils.formatAmount(tenant.monthlyRent))
                 DetailRow("Electricity Rate", "₹${tenant.electricityRate}/unit")
                 DetailRow("Security Deposit", CurrencyUtils.formatAmountCompact(tenant.advanceDeposit))
             }

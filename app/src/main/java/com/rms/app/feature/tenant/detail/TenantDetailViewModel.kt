@@ -157,8 +157,16 @@ class TenantDetailViewModel @Inject constructor(
                 }
             }
             
-            val paidMonths = tenantPayments.map { it.forMonth to it.forYear }.toSet()
-            val unpaidMonths = allMonths.filter { it !in paidMonths }.sortedWith(compareBy({ it.second }, { it.first }))
+            val paidMonthsAmount = mutableMapOf<Pair<Int, Int>, Double>()
+            for (payment in tenantPayments) {
+                val key = payment.forMonth to payment.forYear
+                paidMonthsAmount[key] = (paidMonthsAmount[key] ?: 0.0) + payment.amount
+            }
+            
+            val unpaidMonths = allMonths.filter { monthYear ->
+                val paid = paidMonthsAmount[monthYear] ?: 0.0
+                paid < effectiveRent
+            }.sortedWith(compareBy({ it.second }, { it.first }))
             
             if (unpaidMonths.isEmpty()) {
                 _uiState.update { it.copy(error = "Rent already paid in advance for upcoming cycle.") }
@@ -166,13 +174,15 @@ class TenantDetailViewModel @Inject constructor(
             }
             
             val defaultMonth = unpaidMonths.firstOrNull() ?: (DateUtils.getCurrentMonth() to DateUtils.getCurrentYear())
+            val remainingForDefault = effectiveRent - (paidMonthsAmount[defaultMonth] ?: 0.0)
+            val suggestedAmount = if (remainingForDefault > 0) remainingForDefault else effectiveRent
 
             _paymentData.value = RecordPaymentData(
                 tenantId = tenantId,
                 tenantName = tenant?.name ?: "",
                 roomNumber = room?.roomNumber ?: "",
-                suggestedAmount = effectiveRent,
-                amount = if (effectiveRent > 0) effectiveRent.toInt().toString() else "",
+                suggestedAmount = suggestedAmount,
+                amount = if (suggestedAmount > 0) suggestedAmount.toInt().toString() else "",
                 forMonth = defaultMonth.first,
                 forYear = defaultMonth.second,
                 unpaidMonths = unpaidMonths
@@ -313,10 +323,12 @@ class TenantDetailViewModel @Inject constructor(
                 else -> com.rms.app.core.util.WhatsAppHelper.getDefaultRentReminderTemplate()
             }
             
+            val recentPaymentAmount = _uiState.value.payments.maxByOrNull { it.paymentDate }?.amount ?: 0.0
+            
             val amountStr = when (templateType) {
                 "ELECTRICITY_REMINDER" -> com.rms.app.core.util.CurrencyUtils.formatAmountCompact(pendingElectricity)
                 "COMBINED_REMINDER" -> com.rms.app.core.util.CurrencyUtils.formatAmountCompact(pendingRent + pendingElectricity)
-                "PAYMENT_CONFIRMATION" -> com.rms.app.core.util.CurrencyUtils.formatAmountCompact(totalPaidRent) // Or recent payment amount
+                "PAYMENT_CONFIRMATION" -> com.rms.app.core.util.CurrencyUtils.formatAmountCompact(recentPaymentAmount)
                 else -> com.rms.app.core.util.CurrencyUtils.formatAmountCompact(pendingRent)
             }
 

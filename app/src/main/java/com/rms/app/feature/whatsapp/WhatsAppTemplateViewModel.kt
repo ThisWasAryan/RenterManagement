@@ -45,7 +45,8 @@ class WhatsAppTemplateViewModel @Inject constructor(
             WhatsAppTemplate(templateType = "RENT_REMINDER", messageTemplate = "Hi {tenantName},\n\nJust a gentle reminder that your rent of {amount} for {month} is due. Please make the payment at your earliest convenience.\n\nThank you!"),
             WhatsAppTemplate(templateType = "OVERDUE_REMINDER", messageTemplate = "Hi {tenantName},\n\nThis is a reminder that your rent payment of {amount} for {month} is currently overdue. Please process the payment immediately to avoid any late fees.\n\nThank you!"),
             WhatsAppTemplate(templateType = "ELECTRICITY_REMINDER", messageTemplate = "Hi {tenantName},\n\nYour electricity bill for {month} is {amount} based on a reading of {reading} units. Please pay this along with your rent.\n\nThank you!"),
-            WhatsAppTemplate(templateType = "PAYMENT_CONFIRMATION", messageTemplate = "Hi {tenantName},\n\nWe have received your payment of {amount} for {month}. Thank you for your prompt payment!\n\nRegards.")
+            WhatsAppTemplate(templateType = "PAYMENT_CONFIRMATION", messageTemplate = "Hi {tenantName},\n\nWe have received your payment of {amount} for {month}. Thank you for your prompt payment!\n\nRegards."),
+            WhatsAppTemplate(templateType = "COMBINED_REMINDER", messageTemplate = "Hi {tenantName},\n\nYour total dues for {month} are {totalAmount}.\nRent: {rentAmount}\nElectricity: {electricityAmount}\n\nPlease make the payment.\n\nThank you! \uD83C\uDFE0⚡")
         )
         defaults.forEach { templateDao.insertTemplate(it) }
     }

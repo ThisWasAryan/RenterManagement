@@ -41,7 +41,11 @@ data class AddTenantUiState(
     val isEditing: Boolean = false,
     val isSaving: Boolean = false,
     val isSaved: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    // Rent Sync Dialog
+    val showRentSyncDialog: Boolean = false,
+    val pendingTenantToSave: Tenant? = null,
+    val relatedRoomIdForSync: Long? = null
 )
 
 @HiltViewModel
@@ -205,21 +209,65 @@ class AddTenantViewModel @Inject constructor(
                     isActive = true
                 )
 
-                if (state.isEditing) {
-                    tenantRepository.updateTenant(tenant)
-                } else {
-                    tenantRepository.insertTenant(tenant)
+                // Rent Sync Check
+                if (roomId != null) {
+                    val room = tenantRepository.getRoomById(roomId)
+                    if (room != null && tenant.monthlyRent != room.monthlyRent && room.monthlyRent > 0.0) {
+                        _uiState.update { 
+                            it.copy(
+                                showRentSyncDialog = true,
+                                pendingTenantToSave = tenant,
+                                relatedRoomIdForSync = roomId,
+                                isSaving = false
+                            )
+                        }
+                        return@launch
+                    }
                 }
 
-                // Mark room as occupied
-                roomId?.let {
-                    tenantRepository.updateRoomStatus(it, "occupied")
-                }
-
-                _uiState.update { it.copy(isSaving = false, isSaved = true) }
+                proceedWithSave(tenant, roomId)
             } catch (e: Exception) {
                 _uiState.update { it.copy(isSaving = false, error = e.message) }
             }
         }
+    }
+
+    fun confirmRentSync(updateRoom: Boolean) {
+        val state = _uiState.value
+        val tenant = state.pendingTenantToSave ?: return
+        val roomId = state.relatedRoomIdForSync
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(showRentSyncDialog = false, isSaving = true) }
+            try {
+                if (updateRoom && roomId != null) {
+                    val room = tenantRepository.getRoomById(roomId)
+                    if (room != null) {
+                        tenantRepository.updateRoom(room.copy(monthlyRent = tenant.monthlyRent))
+                    }
+                }
+                proceedWithSave(tenant, roomId)
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isSaving = false, error = e.message) }
+            }
+        }
+    }
+
+    fun dismissRentSyncDialog() {
+        _uiState.update { it.copy(showRentSyncDialog = false, pendingTenantToSave = null, relatedRoomIdForSync = null) }
+    }
+
+    private suspend fun proceedWithSave(tenant: Tenant, roomId: Long?) {
+        if (_uiState.value.isEditing) {
+            tenantRepository.updateTenant(tenant)
+        } else {
+            tenantRepository.insertTenant(tenant)
+        }
+
+        roomId?.let {
+            tenantRepository.updateRoomStatus(it, "occupied")
+        }
+
+        _uiState.update { it.copy(isSaving = false, isSaved = true) }
     }
 }

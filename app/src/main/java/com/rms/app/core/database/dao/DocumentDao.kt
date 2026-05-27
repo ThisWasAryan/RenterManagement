@@ -15,6 +15,10 @@ interface DocumentDao {
     @Query("SELECT * FROM documents ORDER BY createdAt DESC")
     fun getAllDocuments(): Flow<List<Document>>
 
+    @Transaction
+    @Query("SELECT * FROM documents ORDER BY createdAt DESC")
+    fun getAllDocumentsWithContext(): Flow<List<com.rms.app.core.model.relations.DocumentWithContext>>
+
     @Query("SELECT * FROM documents WHERE id = :id")
     suspend fun getDocumentById(id: Long): Document?
 

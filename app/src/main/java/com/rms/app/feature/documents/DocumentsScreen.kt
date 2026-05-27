@@ -139,8 +139,16 @@ fun DocumentsScreen(
         if (uiState.agreements.isEmpty()) {
             item { EmptyDocPlaceholder("No agreements uploaded") }
         } else {
-            items(uiState.agreements) { doc ->
-                DocumentRow(name = doc.name, subtitle = doc.documentType, date = DateUtils.formatFullDate(doc.createdAt), fileUri = doc.fileUri)
+            items(uiState.agreements) { docWithCtx ->
+                val doc = docWithCtx.document
+                val tenantName = docWithCtx.tenant?.name ?: "Unknown Tenant"
+                DocumentRow(
+                    name = doc.name, 
+                    subtitle = "Agreement • $tenantName", 
+                    date = DateUtils.formatFullDate(doc.createdAt), 
+                    fileUri = doc.fileUri,
+                    onDelete = { viewModel.deleteDocument(doc) }
+                )
             }
         }
 
@@ -173,10 +181,12 @@ fun DocumentsScreen(
         if (uiState.meterPhotos.isEmpty()) {
             item { EmptyDocPlaceholder("No meter photos yet") }
         } else {
-            items(uiState.meterPhotos) { doc ->
+            items(uiState.meterPhotos) { docWithCtx ->
+                val doc = docWithCtx.document
+                val tenantName = docWithCtx.tenant?.name ?: "Unknown Tenant"
                 DocumentRow(
                     name = doc.name, 
-                    subtitle = "Meter Photo", 
+                    subtitle = "Meter Photo • $tenantName", 
                     date = DateUtils.formatFullDate(doc.createdAt), 
                     fileUri = doc.fileUri,
                     onDelete = { viewModel.deleteDocument(doc) }
@@ -189,10 +199,12 @@ fun DocumentsScreen(
             item {
                 SectionTitle(icon = Icons.Outlined.FolderOpen, title = "All Documents (${uiState.documents.size})")
             }
-            items(uiState.documents) { doc ->
+            items(uiState.documents) { docWithCtx ->
+                val doc = docWithCtx.document
+                val tenantName = docWithCtx.tenant?.name ?: "Unknown Tenant"
                 DocumentRow(
                     name = doc.name, 
-                    subtitle = doc.documentType, 
+                    subtitle = "${doc.documentType.replace('_', ' ')} • $tenantName", 
                     date = DateUtils.formatFullDate(doc.createdAt), 
                     fileUri = doc.fileUri,
                     onDelete = { viewModel.deleteDocument(doc) }
