@@ -31,7 +31,11 @@ data class HomeUiState(
     val totalCollectedThisMonth: Double = 0.0,
     val totalPendingRent: Double = 0.0,
     val overdueCount: Int = 0,
-    val error: String? = null
+    val error: String? = null,
+    val showPaymentSelectionForTenant: Long? = null,
+    val showElectricityPayForTenant: Long? = null,
+    val selectedElectricityReadingId: Long? = null,
+    val electricityPayMode: com.rms.app.core.model.enums.PaymentMode = com.rms.app.core.model.enums.PaymentMode.CASH
 )
 
 @HiltViewModel
@@ -113,8 +117,10 @@ class HomeViewModel @Inject constructor(
                         )
                     }
 
-                    val totalPending = cardDataList.sumOf { it.pendingBalance }
-                    val overdueCount = cardDataList.count { !it.isPaidThisMonth && it.tenantWithRoom.tenant.monthlyRent > 0 }
+                    val totalPending = cardDataList.sumOf { it.pendingBalance + it.pendingElectricity }
+                    val overdueCount = cardDataList.count { 
+                        (!it.isPaidThisMonth && it.tenantWithRoom.tenant.monthlyRent > 0) || it.pendingElectricity > 0
+                    }
 
                     _uiState.update {
                         it.copy(
@@ -350,6 +356,49 @@ class HomeViewModel @Inject constructor(
             )
             
             com.rms.app.core.util.WhatsAppHelper.formatAndSendMessage(context, phone, templateText, args)
+        }
+    }
+
+    // --- Smart Payment Flow & Electricity ---
+
+    fun showPaymentSelection(tenantId: Long) {
+        _uiState.update { it.copy(showPaymentSelectionForTenant = tenantId) }
+    }
+
+    fun dismissPaymentSelection() {
+        _uiState.update { it.copy(showPaymentSelectionForTenant = null) }
+    }
+
+    fun showElectricityPayDialog(tenantId: Long, readingId: Long) {
+        _uiState.update { 
+            it.copy(
+                showElectricityPayForTenant = tenantId, 
+                selectedElectricityReadingId = readingId,
+                showPaymentSelectionForTenant = null // dismiss selector if open
+            ) 
+        }
+    }
+
+    fun dismissElectricityPayDialog() {
+        _uiState.update { it.copy(showElectricityPayForTenant = null, selectedElectricityReadingId = null) }
+    }
+
+    fun onElectricityPayModeChange(mode: com.rms.app.core.model.enums.PaymentMode) {
+        _uiState.update { it.copy(electricityPayMode = mode) }
+    }
+
+    fun markElectricityPaid() {
+        val readingId = _uiState.value.selectedElectricityReadingId ?: return
+        val mode = _uiState.value.electricityPayMode
+
+        viewModelScope.launch {
+            try {
+                homeRepository.markElectricityPaid(readingId, System.currentTimeMillis(), mode.name)
+                _uiState.update { it.copy(showElectricityPayForTenant = null, selectedElectricityReadingId = null) }
+                _refreshTrigger.value++ // Trigger a refresh of the dashboard
+            } catch (e: Exception) {
+                _uiState.update { it.copy(error = e.message) }
+            }
         }
     }
 }
