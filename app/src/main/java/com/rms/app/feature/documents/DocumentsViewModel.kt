@@ -13,11 +13,8 @@ import javax.inject.Inject
 
 data class DocumentsUiState(
     val isLoading: Boolean = true,
-    val documents: List<Document> = emptyList(),
+    val categorizedDocuments: Map<DocumentType, List<com.rms.app.core.model.relations.DocumentWithContext>> = emptyMap(),
     val tenants: List<Tenant> = emptyList(),
-    val agreements: List<Document> = emptyList(),
-    val idDocuments: List<Document> = emptyList(),
-    val meterPhotos: List<Document> = emptyList(),
     val showUploadDialog: Boolean = false,
     val selectedTenantId: Long? = null,
     val selectedDocType: DocumentType = DocumentType.OTHER,
@@ -40,21 +37,23 @@ class DocumentsViewModel @Inject constructor(
 
     private fun loadDocuments() {
         viewModelScope.launch {
-            documentRepository.getAllDocuments().collect { docs ->
+            documentRepository.getAllDocumentsWithContext().collect { docs ->
+                // Exclude METER_PHOTO entirely
+                val filteredDocs = docs.filter { it.document.documentType != DocumentType.METER_PHOTO.name }
+                
+                // Group by DocumentType enum
+                val categorized = filteredDocs.groupBy { docWithCtx ->
+                    try {
+                        DocumentType.valueOf(docWithCtx.document.documentType)
+                    } catch (e: Exception) {
+                        DocumentType.OTHER
+                    }
+                }
+                
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        documents = docs,
-                        agreements = docs.filter { d -> d.documentType == DocumentType.AGREEMENT.name },
-                        idDocuments = docs.filter { d ->
-                            d.documentType in listOf(
-                                DocumentType.AADHAAR.name,
-                                DocumentType.PAN.name,
-                                DocumentType.PASSPORT.name,
-                                DocumentType.DRIVING_LICENSE.name
-                            )
-                        },
-                        meterPhotos = docs.filter { d -> d.documentType == DocumentType.METER_PHOTO.name }
+                        categorizedDocuments = categorized
                     )
                 }
             }

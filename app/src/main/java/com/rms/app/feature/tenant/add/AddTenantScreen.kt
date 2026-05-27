@@ -213,15 +213,36 @@ fun AddTenantScreen(
                     )
                 }
 
-                OutlinedTextField(
-                    value = uiState.roomNumber,
-                    onValueChange = viewModel::onRoomNumberChange,
-                    label = { Text("Room Number") },
-                    leadingIcon = { Icon(Icons.Filled.MeetingRoom, null) },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    shape = MaterialTheme.shapes.medium
-                )
+                if (uiState.selectedPropertyId == null) {
+                    OutlinedTextField(
+                        value = uiState.newPropertyAddress,
+                        onValueChange = viewModel::onNewPropertyAddressChange,
+                        label = { Text("Property Address (Optional)") },
+                        leadingIcon = { Icon(Icons.Filled.LocationOn, null) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = MaterialTheme.shapes.medium
+                    )
+                }
+
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    OutlinedTextField(
+                        value = uiState.roomNumber,
+                        onValueChange = viewModel::onRoomNumberChange,
+                        label = { Text("Room Number") },
+                        leadingIcon = { Icon(Icons.Filled.MeetingRoom, null) },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        shape = MaterialTheme.shapes.medium
+                    )
+                    OutlinedTextField(
+                        value = uiState.roomFloor,
+                        onValueChange = viewModel::onRoomFloorChange,
+                        label = { Text("Floor (Opt)") },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        shape = MaterialTheme.shapes.medium
+                    )
+                }
             }
 
             OutlinedTextField(
@@ -280,17 +301,6 @@ fun AddTenantScreen(
                 ) {
                     DatePicker(state = datePickerState)
                 }
-
-                OutlinedTextField(
-                    value = uiState.roomNumber,
-                    onValueChange = viewModel::onRoomNumberChange,
-                    label = { Text("Room Number") },
-                    leadingIcon = { Icon(Icons.Filled.MeetingRoom, null) },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    shape = MaterialTheme.shapes.medium
-                )
-            }
 
             OutlinedTextField(
                 value = uiState.advanceDeposit,
@@ -394,6 +404,24 @@ fun AddTenantScreen(
             }
 
             Spacer(modifier = Modifier.height(32.dp))
+        }
+
+        if (uiState.showRentSyncDialog) {
+            AlertDialog(
+                onDismissRequest = { viewModel.dismissRentSyncDialog() },
+                title = { Text("Update Room Rent?") },
+                text = { Text("This tenant's rent differs from the room's default rent.\nDo you also want to update the room's default rent?") },
+                confirmButton = {
+                    TextButton(onClick = { viewModel.confirmRentSync(updateRoom = true) }) {
+                        Text("Update Room Rent")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { viewModel.confirmRentSync(updateRoom = false) }) {
+                        Text("Keep Tenant Override")
+                    }
+                }
+            )
         }
     }
 }

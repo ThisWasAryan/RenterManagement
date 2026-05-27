@@ -413,8 +413,7 @@ private fun OverviewTab(tenant: com.rms.app.core.model.entities.Tenant, room: co
     ) {
         item {
             DetailCard("Rent Details") {
-                DetailRow("Monthly Rent", CurrencyUtils.formatAmountCompact(effectiveRent))
-                DetailRow("Due Day", "${tenant.rentDueDay} of every month")
+                DetailRow("Rent Amount", CurrencyUtils.formatAmount(tenant.monthlyRent))
                 DetailRow("Electricity Rate", "₹${tenant.electricityRate}/unit")
                 DetailRow("Security Deposit", CurrencyUtils.formatAmountCompact(tenant.advanceDeposit))
             }
@@ -627,11 +626,12 @@ private fun DocumentsTab(
 private fun DetailCard(title: String, content: @Composable ColumnScope.() -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        shape = MaterialTheme.shapes.medium
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
-            Spacer(Modifier.height(12.dp))
+            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            Spacer(Modifier.height(16.dp))
             content()
         }
     }

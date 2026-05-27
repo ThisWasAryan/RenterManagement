@@ -48,14 +48,32 @@ class HomeRepository @Inject constructor(
     suspend fun insertPayment(payment: Payment): Long =
         paymentDao.insertPayment(payment)
 
+    suspend fun markElectricityPaid(readingId: Long, paidDate: Long, mode: String) {
+        electricityReadingDao.markAsPaidWithDetails(readingId, paidDate, mode)
+        val reading = electricityReadingDao.getReadingById(readingId)
+        if (reading != null && reading.totalAmount > 0) {
+            val payment = Payment(
+                tenantId = reading.tenantId,
+                amount = reading.totalAmount,
+                type = "ELECTRICITY",
+                mode = mode,
+                paymentDate = paidDate,
+                forMonth = reading.forMonth,
+                forYear = reading.forYear,
+                notes = "Electricity Payment for ${reading.previousReading.toInt()} -> ${reading.currentReading.toInt()} units"
+            )
+            paymentDao.insertPayment(payment)
+        }
+    }
+
     suspend fun getTenantById(tenantId: Long): Tenant? =
         tenantDao.getTenantById(tenantId)
 
     suspend fun getRoomById(roomId: Long): Room? =
         roomDao.getRoomById(roomId)
 
-    fun getTotalCollectedForMonth(month: Int, year: Int): Flow<Double?> =
-        paymentDao.getTotalCollectedForMonth(month, year)
+    fun getTotalCollectedBetweenDates(startDate: Long, endDate: Long): Flow<Double?> =
+        paymentDao.getTotalCollectedBetweenDates(startDate, endDate)
 
     suspend fun getTemplate(type: String): WhatsAppTemplate? =
         whatsappTemplateDao.getTemplate(type)

@@ -3,6 +3,7 @@ package com.rms.app.feature.documents
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -22,7 +23,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rms.app.core.model.enums.DocumentType
-import com.rms.app.core.ui.components.EmptyState
 import com.rms.app.core.util.DateUtils
 
 @Composable
@@ -132,71 +132,86 @@ fun DocumentsScreen(
             }
         }
 
-        // Rental Agreements Section
-        item {
-            SectionTitle(icon = Icons.Filled.Description, title = "Rental Agreements")
-        }
-        if (uiState.agreements.isEmpty()) {
-            item { EmptyDocPlaceholder("No agreements uploaded") }
-        } else {
-            items(uiState.agreements) { doc ->
-                DocumentRow(name = doc.name, subtitle = doc.documentType, date = DateUtils.formatFullDate(doc.createdAt), fileUri = doc.fileUri)
-            }
-        }
+        // Categories
+        val allCategories = listOf(
+            DocumentType.AADHAAR,
+            DocumentType.PAN,
+            DocumentType.PASSPORT,
+            DocumentType.DRIVING_LICENSE,
+            DocumentType.AGREEMENT,
+            DocumentType.RECEIPT,
+            DocumentType.OTHER
+        )
 
-        // ID Documents Section
-        item {
-            SectionTitle(icon = Icons.Outlined.Badge, title = "ID Documents")
-        }
-        item {
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 20.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                val idTypes = listOf(
-                    DocumentType.AADHAAR to "Aadhaar",
-                    DocumentType.PAN to "PAN Card",
-                    DocumentType.PASSPORT to "Passport",
-                    DocumentType.DRIVING_LICENSE to "Driving License"
-                )
-                items(idTypes) { (type, label) ->
-                    val hasDoc = uiState.idDocuments.any { it.documentType == type.name }
-                    IdDocCard(label = label, isUploaded = hasDoc)
-                }
-            }
-        }
-
-        // Meter Photos Section
-        item {
-            SectionTitle(icon = Icons.Outlined.CameraAlt, title = "Meter Photos")
-        }
-        if (uiState.meterPhotos.isEmpty()) {
-            item { EmptyDocPlaceholder("No meter photos yet") }
-        } else {
-            items(uiState.meterPhotos) { doc ->
-                DocumentRow(
-                    name = doc.name, 
-                    subtitle = "Meter Photo", 
-                    date = DateUtils.formatFullDate(doc.createdAt), 
-                    fileUri = doc.fileUri,
-                    onDelete = { viewModel.deleteDocument(doc) }
-                )
-            }
-        }
-
-        // All Documents Section
-        if (uiState.documents.isNotEmpty()) {
+        allCategories.forEach { category ->
+            val docsInCategory = uiState.categorizedDocuments[category] ?: emptyList()
             item {
-                SectionTitle(icon = Icons.Outlined.FolderOpen, title = "All Documents (${uiState.documents.size})")
-            }
-            items(uiState.documents) { doc ->
-                DocumentRow(
-                    name = doc.name, 
-                    subtitle = doc.documentType, 
-                    date = DateUtils.formatFullDate(doc.createdAt), 
-                    fileUri = doc.fileUri,
-                    onDelete = { viewModel.deleteDocument(doc) }
-                )
+                var expanded by remember { mutableStateOf(false) }
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 6.dp)
+                        .clip(MaterialTheme.shapes.medium)
+                        .clickable(enabled = docsInCategory.isNotEmpty()) { expanded = !expanded },
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (docsInCategory.isEmpty()) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = if (docsInCategory.isEmpty()) 0.dp else 2.dp)
+                ) {
+                    Column {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = getIconForCategory(category),
+                                contentDescription = null,
+                                tint = if (docsInCategory.isEmpty()) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(Modifier.width(16.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = category.displayName,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = if (docsInCategory.isEmpty()) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurface,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Text(
+                                    text = if (docsInCategory.isEmpty()) "No uploads" else "${docsInCategory.size} uploaded",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            if (docsInCategory.isNotEmpty()) {
+                                Icon(
+                                    imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+
+                        if (expanded && docsInCategory.isNotEmpty()) {
+                            Divider(color = MaterialTheme.colorScheme.surfaceVariant)
+                            Column(modifier = Modifier.padding(bottom = 8.dp)) {
+                                docsInCategory.forEach { docWithCtx ->
+                                    val doc = docWithCtx.document
+                                    val tenantName = docWithCtx.tenant?.name ?: "Unknown Tenant"
+                                    DocumentRow(
+                                        name = doc.name,
+                                        subtitle = tenantName,
+                                        date = DateUtils.formatFullDate(doc.createdAt),
+                                        fileUri = doc.fileUri,
+                                        onDelete = { viewModel.deleteDocument(doc) }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -412,5 +427,16 @@ private fun EmptyDocPlaceholder(text: String) {
             Spacer(Modifier.width(8.dp))
             Text(text, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
+    }
+}
+
+@Composable
+private fun getIconForCategory(type: DocumentType): androidx.compose.ui.graphics.vector.ImageVector {
+    return when (type) {
+        DocumentType.AADHAAR, DocumentType.PAN, DocumentType.PASSPORT, DocumentType.DRIVING_LICENSE -> Icons.Outlined.Badge
+        DocumentType.AGREEMENT -> Icons.Filled.Description
+        DocumentType.RECEIPT -> Icons.Outlined.Receipt
+        DocumentType.METER_PHOTO -> Icons.Outlined.CameraAlt
+        DocumentType.OTHER -> Icons.Outlined.FolderOpen
     }
 }

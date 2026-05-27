@@ -31,7 +31,11 @@ data class HomeUiState(
     val totalCollectedThisMonth: Double = 0.0,
     val totalPendingRent: Double = 0.0,
     val overdueCount: Int = 0,
-    val error: String? = null
+    val error: String? = null,
+    val showPaymentSelectionForTenant: Long? = null,
+    val showElectricityPayForTenant: Long? = null,
+    val selectedElectricityReadingId: Long? = null,
+    val electricityPayMode: com.rms.app.core.model.enums.PaymentMode = com.rms.app.core.model.enums.PaymentMode.CASH
 )
 
 @HiltViewModel
@@ -113,8 +117,10 @@ class HomeViewModel @Inject constructor(
                         )
                     }
 
-                    val totalPending = cardDataList.sumOf { it.pendingBalance }
-                    val overdueCount = cardDataList.count { !it.isPaidThisMonth && it.tenantWithRoom.tenant.monthlyRent > 0 }
+                    val totalPending = cardDataList.sumOf { it.pendingBalance + it.pendingElectricity }
+                    val overdueCount = cardDataList.count { 
+                        (!it.isPaidThisMonth && it.tenantWithRoom.tenant.monthlyRent > 0) || it.pendingElectricity > 0
+                    }
 
                     _uiState.update {
                         it.copy(
@@ -138,12 +144,23 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun observeMonthlyCollection() {
+        val calendar = java.util.Calendar.getInstance()
+        calendar.set(java.util.Calendar.DAY_OF_MONTH, 1)
+        calendar.set(java.util.Calendar.HOUR_OF_DAY, 0)
+        calendar.set(java.util.Calendar.MINUTE, 0)
+        calendar.set(java.util.Calendar.SECOND, 0)
+        calendar.set(java.util.Calendar.MILLISECOND, 0)
+        val startOfMonth = calendar.timeInMillis
+
+        calendar.add(java.util.Calendar.MONTH, 1)
+        calendar.add(java.util.Calendar.MILLISECOND, -1)
+        val endOfMonth = calendar.timeInMillis
+
         viewModelScope.launch {
-            homeRepository.getTotalCollectedForMonth(
-                DateUtils.getCurrentMonth(), DateUtils.getCurrentYear()
-            ).collect { total ->
-                _uiState.update { it.copy(totalCollectedThisMonth = total ?: 0.0) }
-            }
+            homeRepository.getTotalCollectedBetweenDates(startOfMonth, endOfMonth)
+                .collect { total ->
+                    _uiState.update { it.copy(totalCollectedThisMonth = total ?: 0.0) }
+                }
         }
     }
 
@@ -188,8 +205,16 @@ class HomeViewModel @Inject constructor(
                 }
             }
             
-            val paidMonths = payments.map { it.forMonth to it.forYear }.toSet()
-            val unpaidMonths = allMonths.filter { it !in paidMonths }.sortedWith(compareBy({ it.second }, { it.first }))
+            val paidMonthsAmount = mutableMapOf<Pair<Int, Int>, Double>()
+            for (payment in payments) {
+                val key = payment.forMonth to payment.forYear
+                paidMonthsAmount[key] = (paidMonthsAmount[key] ?: 0.0) + payment.amount
+            }
+            
+            val unpaidMonths = allMonths.filter { monthYear ->
+                val paid = paidMonthsAmount[monthYear] ?: 0.0
+                paid < effectiveRent
+            }.sortedWith(compareBy({ it.second }, { it.first }))
             
             if (unpaidMonths.isEmpty()) {
                 _uiState.update { it.copy(error = "Rent already paid in advance for upcoming cycle.") }
@@ -197,13 +222,15 @@ class HomeViewModel @Inject constructor(
             }
             
             val defaultMonth = unpaidMonths.firstOrNull() ?: (DateUtils.getCurrentMonth() to DateUtils.getCurrentYear())
+            val remainingForDefault = effectiveRent - (paidMonthsAmount[defaultMonth] ?: 0.0)
+            val suggestedAmount = if (remainingForDefault > 0) remainingForDefault else effectiveRent
 
             _paymentData.value = RecordPaymentData(
                 tenantId = tenantId,
                 tenantName = tenant?.name ?: "",
                 roomNumber = room?.roomNumber ?: "",
-                suggestedAmount = effectiveRent,
-                amount = if (effectiveRent > 0) effectiveRent.toInt().toString() else "",
+                suggestedAmount = suggestedAmount,
+                amount = if (suggestedAmount > 0) suggestedAmount.toInt().toString() else "",
                 forMonth = defaultMonth.first,
                 forYear = defaultMonth.second,
                 unpaidMonths = unpaidMonths
@@ -261,8 +288,8 @@ class HomeViewModel @Inject constructor(
                 _paymentData.update { it.copy(isSaving = false) }
                 _showPaymentSheet.value = false
 
-                // Refresh tenant list
-                loadTenants()
+                // Trigger a refresh to automatically update all flows and pending totals
+                refresh()
             } catch (e: Exception) {
                 _paymentData.update { it.copy(isSaving = false, error = e.message) }
             }
@@ -305,10 +332,13 @@ class HomeViewModel @Inject constructor(
                 else -> com.rms.app.core.util.WhatsAppHelper.getDefaultRentReminderTemplate()
             }
             
+            val lastPayment = homeRepository.getLastPayment(tenantId)
+            val recentPaymentAmount = lastPayment?.amount ?: 0.0
+            
             val amountStr = when (templateType) {
                 "ELECTRICITY_REMINDER" -> com.rms.app.core.util.CurrencyUtils.formatAmountCompact(pendingElectricity)
                 "COMBINED_REMINDER" -> com.rms.app.core.util.CurrencyUtils.formatAmountCompact(pendingRent + pendingElectricity)
-                "PAYMENT_CONFIRMATION" -> com.rms.app.core.util.CurrencyUtils.formatAmountCompact(totalPaidRent) // Or recent payment amount
+                "PAYMENT_CONFIRMATION" -> com.rms.app.core.util.CurrencyUtils.formatAmountCompact(recentPaymentAmount)
                 else -> com.rms.app.core.util.CurrencyUtils.formatAmountCompact(pendingRent)
             }
 
@@ -326,6 +356,49 @@ class HomeViewModel @Inject constructor(
             )
             
             com.rms.app.core.util.WhatsAppHelper.formatAndSendMessage(context, phone, templateText, args)
+        }
+    }
+
+    // --- Smart Payment Flow & Electricity ---
+
+    fun showPaymentSelection(tenantId: Long) {
+        _uiState.update { it.copy(showPaymentSelectionForTenant = tenantId) }
+    }
+
+    fun dismissPaymentSelection() {
+        _uiState.update { it.copy(showPaymentSelectionForTenant = null) }
+    }
+
+    fun showElectricityPayDialog(tenantId: Long, readingId: Long) {
+        _uiState.update { 
+            it.copy(
+                showElectricityPayForTenant = tenantId, 
+                selectedElectricityReadingId = readingId,
+                showPaymentSelectionForTenant = null // dismiss selector if open
+            ) 
+        }
+    }
+
+    fun dismissElectricityPayDialog() {
+        _uiState.update { it.copy(showElectricityPayForTenant = null, selectedElectricityReadingId = null) }
+    }
+
+    fun onElectricityPayModeChange(mode: com.rms.app.core.model.enums.PaymentMode) {
+        _uiState.update { it.copy(electricityPayMode = mode) }
+    }
+
+    fun markElectricityPaid() {
+        val readingId = _uiState.value.selectedElectricityReadingId ?: return
+        val mode = _uiState.value.electricityPayMode
+
+        viewModelScope.launch {
+            try {
+                homeRepository.markElectricityPaid(readingId, System.currentTimeMillis(), mode.name)
+                _uiState.update { it.copy(showElectricityPayForTenant = null, selectedElectricityReadingId = null) }
+                _refreshTrigger.value++ // Trigger a refresh of the dashboard
+            } catch (e: Exception) {
+                _uiState.update { it.copy(error = e.message) }
+            }
         }
     }
 }

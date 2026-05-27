@@ -1,10 +1,13 @@
 package com.rms.app.feature.home
 
 import androidx.compose.animation.*
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.PersonAdd
@@ -167,7 +170,13 @@ fun HomeScreen(
                                 pendingBalance = cardData.pendingBalance,
                                 pendingElectricity = cardData.pendingElectricity,
                                 onRecordRent = {
-                                    viewModel.openPaymentSheet(cardData.tenantWithRoom.tenant.id)
+                                    val elecDue = cardData.pendingElectricity > 0
+                                    
+                                    if (elecDue) {
+                                        viewModel.showPaymentSelection(cardData.tenantWithRoom.tenant.id)
+                                    } else {
+                                        viewModel.openPaymentSheet(cardData.tenantWithRoom.tenant.id)
+                                    }
                                 },
                                 onAddMeter = {
                                     onNavigateToAddReading(cardData.tenantWithRoom.tenant.id)
@@ -201,6 +210,80 @@ fun HomeScreen(
             onNotesChange = viewModel::onPaymentNotesChange,
             onSave = viewModel::savePayment,
             onDismiss = viewModel::dismissPaymentSheet
+        )
+    }
+
+    if (uiState.showPaymentSelectionForTenant != null) {
+        val tenantId = uiState.showPaymentSelectionForTenant
+        val cardData = uiState.tenants.find { it.tenantWithRoom.tenant.id == tenantId }
+        if (cardData != null) {
+            AlertDialog(
+                onDismissRequest = viewModel::dismissPaymentSelection,
+                title = { Text("Select Payment Type") },
+                text = {
+                    Column {
+                        ListItem(
+                            headlineContent = { Text("Record Rent") },
+                            leadingContent = { Icon(Icons.Filled.Payment, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                            modifier = Modifier.clickable {
+                                viewModel.dismissPaymentSelection()
+                                viewModel.openPaymentSheet(tenantId!!)
+                            }
+                        )
+                        ListItem(
+                            headlineContent = { Text("Record Electricity") },
+                            leadingContent = { Icon(Icons.Filled.ElectricBolt, contentDescription = null, tint = Warning) },
+                            modifier = Modifier.clickable {
+                                val readingId = cardData.lastReading?.id ?: return@clickable
+                                viewModel.dismissPaymentSelection()
+                                viewModel.showElectricityPayDialog(tenantId!!, readingId)
+                            }
+                        )
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = viewModel::dismissPaymentSelection) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+    }
+
+    if (uiState.showElectricityPayForTenant != null) {
+        AlertDialog(
+            onDismissRequest = viewModel::dismissElectricityPayDialog,
+            title = { Text("Mark Electricity Paid") },
+            text = {
+                Column {
+                    Text("Select Payment Mode:")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        com.rms.app.core.model.enums.PaymentMode.entries.forEach { mode ->
+                            FilterChip(
+                                selected = uiState.electricityPayMode == mode,
+                                onClick = { viewModel.onElectricityPayModeChange(mode) },
+                                label = { Text(mode.displayName) }
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(onClick = viewModel::markElectricityPaid) {
+                    Text("Confirm Payment")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = viewModel::dismissElectricityPayDialog) {
+                    Text("Cancel")
+                }
+            }
         )
     }
 
@@ -272,11 +355,11 @@ private fun SummaryChip(
 ) {
     Surface(
         modifier = modifier,
-        shape = MaterialTheme.shapes.small,
+        shape = MaterialTheme.shapes.medium,
         color = color.copy(alpha = 0.1f)
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(

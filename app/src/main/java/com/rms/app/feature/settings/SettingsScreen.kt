@@ -1,5 +1,6 @@
 package com.rms.app.feature.settings
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -10,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -109,6 +111,7 @@ fun SettingsScreen(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
+                var showMenu by remember { mutableStateOf(false) }
                 Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Filled.Home, null, tint = MaterialTheme.colorScheme.primary)
                     Spacer(Modifier.width(12.dp))
@@ -116,6 +119,29 @@ fun SettingsScreen(
                         Text(property.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
                         if (property.address.isNotBlank()) {
                             Text(property.address, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                    Box {
+                        IconButton(onClick = { showMenu = true }) {
+                            Icon(Icons.Filled.MoreVert, contentDescription = "More Options")
+                        }
+                        DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                            DropdownMenuItem(
+                                text = { Text("Edit") },
+                                leadingIcon = { Icon(Icons.Filled.Edit, null) },
+                                onClick = {
+                                    showMenu = false
+                                    viewModel.openEditPropertyDialog(property)
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
+                                leadingIcon = { Icon(Icons.Filled.Delete, null, tint = MaterialTheme.colorScheme.error) },
+                                onClick = {
+                                    showMenu = false
+                                    viewModel.deleteProperty(property)
+                                }
+                            )
                         }
                     }
                 }
@@ -139,12 +165,36 @@ fun SettingsScreen(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
+                var showMenu by remember { mutableStateOf(false) }
                 Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Filled.MeetingRoom, null, tint = MaterialTheme.colorScheme.secondary)
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
                         Text("Room ${room.roomNumber}", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
                         Text("${room.floor} • ₹${room.monthlyRent.toInt()}/mo • ${room.status}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Box {
+                        IconButton(onClick = { showMenu = true }) {
+                            Icon(Icons.Filled.MoreVert, contentDescription = "More Options")
+                        }
+                        DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                            DropdownMenuItem(
+                                text = { Text("Edit") },
+                                leadingIcon = { Icon(Icons.Filled.Edit, null) },
+                                onClick = {
+                                    showMenu = false
+                                    viewModel.openEditRoomDialog(room)
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
+                                leadingIcon = { Icon(Icons.Filled.Delete, null, tint = MaterialTheme.colorScheme.error) },
+                                onClick = {
+                                    showMenu = false
+                                    viewModel.deleteRoom(room)
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -163,17 +213,41 @@ fun SettingsScreen(
         // About
         item { SettingsSectionTitle("About") }
         item {
+            val context = LocalContext.current
             Card(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text("RMS - Rent Management System", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
-                    Text("Version 1.0.0", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("RMS v3.1", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(Modifier.height(8.dp))
+                    Text("Made with ❤️ by Aryan Raj", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(Modifier.height(4.dp))
-                    Text("Replace paper rent notebooks with a practical, fast, organized mobile application.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        text = "GitHub",
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Medium
+                        ),
+                        modifier = Modifier.clickable {
+                            val intent = android.content.Intent(
+                                android.content.Intent.ACTION_VIEW, 
+                                android.net.Uri.parse("https://github.com/ThisWasAryan")
+                            )
+                            context.startActivity(intent)
+                        }.padding(vertical = 4.dp)
+                    )
                 }
             }
+        }
+    }
+
+    val context = LocalContext.current
+    LaunchedEffect(uiState.error) {
+        uiState.error?.let {
+            android.widget.Toast.makeText(context, it, android.widget.Toast.LENGTH_LONG).show()
+            viewModel.clearError()
         }
     }
 
@@ -195,6 +269,102 @@ fun SettingsScreen(
             }
         )
     }
+    
+    // Edit Property Dialog
+    uiState.showEditPropertyDialog?.let { property ->
+        EditPropertyDialog(
+            property = property,
+            onDismiss = { viewModel.closeEditPropertyDialog() },
+            onSave = { name, address -> viewModel.updateProperty(property, name, address); viewModel.closeEditPropertyDialog() }
+        )
+    }
+    
+    // Edit Room Dialog
+    uiState.showEditRoomDialog?.let { room ->
+        EditRoomDialog(
+            room = room,
+            properties = uiState.properties,
+            onDismiss = { viewModel.closeEditRoomDialog() },
+            onSave = { number, floor, rent -> viewModel.updateRoom(room, number, floor, rent); viewModel.closeEditRoomDialog() }
+        )
+    }
+    
+    // Sync Rent Dialog
+    uiState.showSyncRentDialog?.let { (room, newRent) ->
+        AlertDialog(
+            onDismissRequest = { viewModel.closeSyncRentDialog(false) },
+            title = { Text("Update Tenant Rents?") },
+            text = { Text("The room rent was changed to ₹${newRent.toInt()}. Do you want to sync this new rent to all active tenants currently assigned to this room?") },
+            confirmButton = {
+                Button(onClick = { viewModel.closeSyncRentDialog(true) }) { Text("Yes, Sync Rents") }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.closeSyncRentDialog(false) }) { Text("No, Keep Current") }
+            }
+        )
+    }
+}
+
+@Composable
+private fun EditPropertyDialog(property: com.rms.app.core.model.entities.Property, onDismiss: () -> Unit, onSave: (String, String) -> Unit) {
+    var name by remember { mutableStateOf(property.name) }
+    var address by remember { mutableStateOf(property.address) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Edit Property") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Property Name") }, singleLine = true)
+                OutlinedTextField(value = address, onValueChange = { address = it }, label = { Text("Address") }, singleLine = true)
+            }
+        },
+        confirmButton = {
+            Button(onClick = { onSave(name, address) }, enabled = name.isNotBlank()) { Text("Save") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun EditRoomDialog(
+    room: com.rms.app.core.model.entities.Room, 
+    properties: List<com.rms.app.core.model.entities.Property>,
+    onDismiss: () -> Unit, 
+    onSave: (String, String, Double) -> Unit
+) {
+    var roomNumber by remember { mutableStateOf(room.roomNumber) }
+    var floor by remember { mutableStateOf(room.floor) }
+    var rent by remember { mutableStateOf(if (room.monthlyRent > 0) room.monthlyRent.toInt().toString() else "") }
+    val associatedProperty = properties.find { it.id == room.propertyId }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Edit Room") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = associatedProperty?.name ?: "Unknown Property", 
+                    onValueChange = {}, 
+                    label = { Text("Parent Property") }, 
+                    singleLine = true,
+                    readOnly = true,
+                    enabled = false
+                )
+                OutlinedTextField(value = roomNumber, onValueChange = { roomNumber = it }, label = { Text("Room Number") }, singleLine = true)
+                OutlinedTextField(value = floor, onValueChange = { floor = it }, label = { Text("Floor") }, singleLine = true)
+                OutlinedTextField(value = rent, onValueChange = { rent = it }, label = { Text("Monthly Rent (₹)") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onSave(roomNumber, floor, rent.toDoubleOrNull() ?: 0.0) },
+                enabled = roomNumber.isNotBlank()
+            ) { Text("Save") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+    )
 }
 
 @Composable
@@ -287,6 +457,7 @@ private fun AddPropertyDialog(onDismiss: () -> Unit, onAdd: (String, String) -> 
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AddRoomDialog(
     properties: List<com.rms.app.core.model.entities.Property>,
@@ -296,22 +467,64 @@ private fun AddRoomDialog(
     var roomNumber by remember { mutableStateOf("") }
     var floor by remember { mutableStateOf("") }
     var rent by remember { mutableStateOf("") }
-    val propertyId = properties.firstOrNull()?.id ?: 0L
+    var propertyId by remember { mutableStateOf(properties.firstOrNull()?.id ?: 0L) }
+    var dropdownExpanded by remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Add Room") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedTextField(value = roomNumber, onValueChange = { roomNumber = it }, label = { Text("Room Number") }, singleLine = true)
-                OutlinedTextField(value = floor, onValueChange = { floor = it }, label = { Text("Floor") }, singleLine = true)
-                OutlinedTextField(value = rent, onValueChange = { rent = it }, label = { Text("Monthly Rent (₹)") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+                if (properties.size > 1) {
+                    ExposedDropdownMenuBox(
+                        expanded = dropdownExpanded,
+                        onExpandedChange = { dropdownExpanded = it }
+                    ) {
+                        val selectedProp = properties.find { it.id == propertyId }
+                        OutlinedTextField(
+                            value = selectedProp?.name ?: "",
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Select Property") },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = dropdownExpanded) },
+                            modifier = Modifier.fillMaxWidth().menuAnchor()
+                        )
+                        ExposedDropdownMenu(
+                            expanded = dropdownExpanded,
+                            onDismissRequest = { dropdownExpanded = false }
+                        ) {
+                            properties.forEach { prop ->
+                                DropdownMenuItem(
+                                    text = { Text(prop.name) },
+                                    onClick = {
+                                        propertyId = prop.id
+                                        dropdownExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    OutlinedTextField(
+                        value = properties.firstOrNull()?.name ?: "No Property",
+                        onValueChange = {},
+                        label = { Text("Parent Property") },
+                        singleLine = true,
+                        readOnly = true,
+                        enabled = false,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                OutlinedTextField(value = roomNumber, onValueChange = { roomNumber = it }, label = { Text("Room Number") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = floor, onValueChange = { floor = it }, label = { Text("Floor") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = rent, onValueChange = { rent = it }, label = { Text("Monthly Rent (₹)") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
             }
         },
         confirmButton = {
             Button(
                 onClick = { onAdd(propertyId, roomNumber, floor, rent.toDoubleOrNull() ?: 0.0); onDismiss() },
-                enabled = roomNumber.isNotBlank()
+                enabled = roomNumber.isNotBlank() && propertyId != 0L
             ) { Text("Add") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }

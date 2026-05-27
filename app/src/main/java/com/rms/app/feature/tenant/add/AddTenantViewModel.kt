@@ -37,11 +37,18 @@ data class AddTenantUiState(
     val useExistingRoom: Boolean = false,
     val selectedPropertyId: Long? = null,
     val newPropertyName: String = "",
+    val newPropertyAddress: String = "",
+    val roomFloor: String = "",
+    val roomNotes: String = "",
     val sameAsPhone: Boolean = false,
     val isEditing: Boolean = false,
     val isSaving: Boolean = false,
     val isSaved: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    // Rent Sync Dialog
+    val showRentSyncDialog: Boolean = false,
+    val pendingTenantToSave: Tenant? = null,
+    val relatedRoomIdForSync: Long? = null
 )
 
 @HiltViewModel
@@ -73,7 +80,10 @@ class AddTenantViewModel @Inject constructor(
     private fun loadRooms() {
         viewModelScope.launch {
             tenantRepository.getAllRooms().collect { rooms ->
-                _uiState.update { it.copy(availableRooms = rooms) }
+                // Filter to show only available rooms, plus the room currently assigned to this tenant if editing
+                val currentRoomId = _uiState.value.selectedRoomId
+                val assignableRooms = rooms.filter { it.status == "available" || it.id == currentRoomId }
+                _uiState.update { it.copy(availableRooms = assignableRooms) }
             }
         }
     }
@@ -127,6 +137,7 @@ class AddTenantViewModel @Inject constructor(
     fun onEmailChange(email: String) { _uiState.update { it.copy(email = email) } }
     fun onPropertySelected(propertyId: Long?) { _uiState.update { it.copy(selectedPropertyId = propertyId) } }
     fun onNewPropertyNameChange(name: String) { _uiState.update { it.copy(newPropertyName = name, selectedPropertyId = null) } }
+    fun onNewPropertyAddressChange(address: String) { _uiState.update { it.copy(newPropertyAddress = address, selectedPropertyId = null) } }
     fun onRoomSelected(roomId: Long?) {
         _uiState.update {
             val room = it.availableRooms.find { r -> r.id == roomId }
@@ -139,6 +150,8 @@ class AddTenantViewModel @Inject constructor(
         }
     }
     fun onRoomNumberChange(number: String) { _uiState.update { it.copy(roomNumber = number, selectedRoomId = null, useExistingRoom = false) } }
+    fun onRoomFloorChange(floor: String) { _uiState.update { it.copy(roomFloor = floor, selectedRoomId = null, useExistingRoom = false) } }
+    fun onRoomNotesChange(notes: String) { _uiState.update { it.copy(roomNotes = notes, selectedRoomId = null, useExistingRoom = false) } }
     fun onMonthlyRentChange(rent: String) { _uiState.update { it.copy(monthlyRent = rent) } }
     fun onDepositChange(deposit: String) { _uiState.update { it.copy(advanceDeposit = deposit) } }
     fun onElectricityRateChange(rate: String) { _uiState.update { it.copy(electricityRate = rate) } }
@@ -165,7 +178,7 @@ class AddTenantViewModel @Inject constructor(
                     var propId = state.selectedPropertyId
                     if (propId == null) {
                         if (state.newPropertyName.isNotBlank()) {
-                            propId = propertyDao.insertProperty(Property(name = state.newPropertyName, address = ""))
+                            propId = propertyDao.insertProperty(Property(name = state.newPropertyName.trim(), address = state.newPropertyAddress.trim()))
                         } else {
                             // Default property if none provided
                             val existingProps = propertyDao.getAllProperties().first()
@@ -180,12 +193,28 @@ class AddTenantViewModel @Inject constructor(
                     val newRoom = Room(
                         propertyId = propId,
                         roomNumber = state.roomNumber.trim(),
-                        floor = "",
+                        floor = state.roomFloor.trim(),
                         monthlyRent = state.monthlyRent.toDoubleOrNull() ?: 0.0,
                         securityDeposit = state.advanceDeposit.toDoubleOrNull() ?: 0.0,
                         status = "occupied"
                     )
                     roomId = tenantRepository.insertRoom(newRoom)
+                }
+
+                // Strict Room Occupancy Validation
+                if (roomId != null) {
+                    val activeCount = tenantRepository.getActiveTenantsCountForRoom(roomId)
+                    // If editing, the count might include the current tenant (count == 1). 
+                    // If moving into a new room, count must be 0.
+                    val isEditingCurrentRoom = state.isEditing && roomId == tenantId
+                    // Actually, if editing, we might be keeping the same room.
+                    val originalTenant = if (state.isEditing) tenantRepository.getTenantById(tenantId) else null
+                    val isSameRoom = originalTenant?.roomId == roomId
+
+                    if (activeCount > 0 && !isSameRoom) {
+                        _uiState.update { it.copy(isSaving = false, error = "Room is already occupied by another active tenant.") }
+                        return@launch
+                    }
                 }
 
                 val tenant = Tenant(
@@ -205,21 +234,65 @@ class AddTenantViewModel @Inject constructor(
                     isActive = true
                 )
 
-                if (state.isEditing) {
-                    tenantRepository.updateTenant(tenant)
-                } else {
-                    tenantRepository.insertTenant(tenant)
+                // Rent Sync Check
+                if (roomId != null) {
+                    val room = tenantRepository.getRoomById(roomId)
+                    if (room != null && tenant.monthlyRent != room.monthlyRent && room.monthlyRent > 0.0) {
+                        _uiState.update { 
+                            it.copy(
+                                showRentSyncDialog = true,
+                                pendingTenantToSave = tenant,
+                                relatedRoomIdForSync = roomId,
+                                isSaving = false
+                            )
+                        }
+                        return@launch
+                    }
                 }
 
-                // Mark room as occupied
-                roomId?.let {
-                    tenantRepository.updateRoomStatus(it, "occupied")
-                }
-
-                _uiState.update { it.copy(isSaving = false, isSaved = true) }
+                proceedWithSave(tenant, roomId)
             } catch (e: Exception) {
                 _uiState.update { it.copy(isSaving = false, error = e.message) }
             }
         }
+    }
+
+    fun confirmRentSync(updateRoom: Boolean) {
+        val state = _uiState.value
+        val tenant = state.pendingTenantToSave ?: return
+        val roomId = state.relatedRoomIdForSync
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(showRentSyncDialog = false, isSaving = true) }
+            try {
+                if (updateRoom && roomId != null) {
+                    val room = tenantRepository.getRoomById(roomId)
+                    if (room != null) {
+                        tenantRepository.updateRoom(room.copy(monthlyRent = tenant.monthlyRent))
+                    }
+                }
+                proceedWithSave(tenant, roomId)
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isSaving = false, error = e.message) }
+            }
+        }
+    }
+
+    fun dismissRentSyncDialog() {
+        _uiState.update { it.copy(showRentSyncDialog = false, pendingTenantToSave = null, relatedRoomIdForSync = null) }
+    }
+
+    private suspend fun proceedWithSave(tenant: Tenant, roomId: Long?) {
+        if (_uiState.value.isEditing) {
+            tenantRepository.updateTenant(tenant)
+        } else {
+            tenantRepository.insertTenant(tenant)
+        }
+
+        roomId?.let {
+            tenantRepository.updateRoomStatus(it, "occupied")
+        }
+
+        _uiState.update { it.copy(isSaving = false, isSaved = true) }
     }
 }

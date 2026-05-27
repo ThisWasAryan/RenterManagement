@@ -30,8 +30,8 @@ interface PaymentDao {
     @Query("SELECT SUM(amount) FROM payments WHERE tenantId = :tenantId")
     fun getTotalPaidByTenant(tenantId: Long): Flow<Double?>
 
-    @Query("SELECT SUM(amount) FROM payments WHERE forMonth = :month AND forYear = :year")
-    fun getTotalCollectedForMonth(month: Int, year: Int): Flow<Double?>
+    @Query("SELECT SUM(amount) FROM payments WHERE paymentDate >= :startDate AND paymentDate <= :endDate")
+    fun getTotalCollectedBetweenDates(startDate: Long, endDate: Long): Flow<Double?>
 
     @Query("SELECT * FROM payments WHERE paymentDate >= :startDate AND paymentDate <= :endDate ORDER BY paymentDate DESC")
     fun getPaymentsBetweenDates(startDate: Long, endDate: Long): Flow<List<Payment>>

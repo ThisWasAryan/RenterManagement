@@ -53,6 +53,12 @@ interface TenantDao {
     @Delete
     suspend fun deleteTenant(tenant: Tenant)
 
+    @Query("SELECT COUNT(*) FROM tenants WHERE roomId = :roomId AND isActive = 1")
+    suspend fun getActiveTenantsCountForRoom(roomId: Long): Int
+
+    @Query("UPDATE tenants SET monthlyRent = :newRent WHERE roomId = :roomId AND isActive = 1")
+    suspend fun updateRentForActiveTenantsInRoom(roomId: Long, newRent: Double)
+
     @Query("UPDATE tenants SET isActive = 0 WHERE id = :tenantId")
     suspend fun deactivateTenant(tenantId: Long)
 
