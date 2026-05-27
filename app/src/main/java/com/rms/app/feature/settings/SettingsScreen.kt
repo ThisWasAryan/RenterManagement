@@ -212,15 +212,31 @@ fun SettingsScreen(
         // About
         item { SettingsSectionTitle("About") }
         item {
+            val context = LocalContext.current
             Card(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text("RMS - Rent Management System", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
-                    Text("Version 1.0.0", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("RMS v3.1", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(Modifier.height(8.dp))
+                    Text("Made with ❤️ by Aryan Raj", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(Modifier.height(4.dp))
-                    Text("Replace paper rent notebooks with a practical, fast, organized mobile application.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        text = "GitHub",
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Medium
+                        ),
+                        modifier = Modifier.clickable {
+                            val intent = android.content.Intent(
+                                android.content.Intent.ACTION_VIEW, 
+                                android.net.Uri.parse("https://github.com/ThisWasAryan")
+                            )
+                            context.startActivity(intent)
+                        }.padding(vertical = 4.dp)
+                    )
                 }
             }
         }
