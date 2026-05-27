@@ -80,7 +80,10 @@ class AddTenantViewModel @Inject constructor(
     private fun loadRooms() {
         viewModelScope.launch {
             tenantRepository.getAllRooms().collect { rooms ->
-                _uiState.update { it.copy(availableRooms = rooms) }
+                // Filter to show only available rooms, plus the room currently assigned to this tenant if editing
+                val currentRoomId = _uiState.value.selectedRoomId
+                val assignableRooms = rooms.filter { it.status == "available" || it.id == currentRoomId }
+                _uiState.update { it.copy(availableRooms = assignableRooms) }
             }
         }
     }
@@ -196,6 +199,22 @@ class AddTenantViewModel @Inject constructor(
                         status = "occupied"
                     )
                     roomId = tenantRepository.insertRoom(newRoom)
+                }
+
+                // Strict Room Occupancy Validation
+                if (roomId != null) {
+                    val activeCount = tenantRepository.getActiveTenantsCountForRoom(roomId)
+                    // If editing, the count might include the current tenant (count == 1). 
+                    // If moving into a new room, count must be 0.
+                    val isEditingCurrentRoom = state.isEditing && roomId == tenantId
+                    // Actually, if editing, we might be keeping the same room.
+                    val originalTenant = if (state.isEditing) tenantRepository.getTenantById(tenantId) else null
+                    val isSameRoom = originalTenant?.roomId == roomId
+
+                    if (activeCount > 0 && !isSameRoom) {
+                        _uiState.update { it.copy(isSaving = false, error = "Room is already occupied by another active tenant.") }
+                        return@launch
+                    }
                 }
 
                 val tenant = Tenant(

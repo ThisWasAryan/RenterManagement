@@ -36,6 +36,9 @@ class TenantRepository @Inject constructor(
     suspend fun deactivateTenant(tenantId: Long) =
         tenantDao.deactivateTenant(tenantId)
 
+    suspend fun getActiveTenantsCountForRoom(roomId: Long): Int =
+        tenantDao.getActiveTenantsCountForRoom(roomId)
+
     fun getAllRooms(): Flow<List<Room>> = roomDao.getAllRooms()
 
     fun getPaymentsByTenant(tenantId: Long): Flow<List<Payment>> =
