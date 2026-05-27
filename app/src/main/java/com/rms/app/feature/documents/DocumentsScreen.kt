@@ -22,7 +22,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rms.app.core.model.enums.DocumentType
-import com.rms.app.core.ui.components.EmptyState
 import com.rms.app.core.util.DateUtils
 
 @Composable
@@ -168,7 +167,7 @@ fun DocumentsScreen(
                     DocumentType.DRIVING_LICENSE to "Driving License"
                 )
                 items(idTypes) { (type, label) ->
-                    val hasDoc = uiState.idDocuments.any { it.documentType == type.name }
+                    val hasDoc = uiState.idDocuments.any { it.document.documentType == type.name }
                     IdDocCard(label = label, isUploaded = hasDoc)
                 }
             }

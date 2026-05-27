@@ -10,6 +10,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -225,9 +226,10 @@ fun SettingsScreen(
         }
     }
 
+    val context = LocalContext.current
     LaunchedEffect(uiState.error) {
         uiState.error?.let {
-            android.widget.Toast.makeText(androidx.compose.ui.platform.LocalContext.current, it, android.widget.Toast.LENGTH_LONG).show()
+            android.widget.Toast.makeText(context, it, android.widget.Toast.LENGTH_LONG).show()
             viewModel.clearError()
         }
     }
@@ -264,6 +266,7 @@ fun SettingsScreen(
     uiState.showEditRoomDialog?.let { room ->
         EditRoomDialog(
             room = room,
+            properties = uiState.properties,
             onDismiss = { viewModel.closeEditRoomDialog() },
             onSave = { number, floor, rent -> viewModel.updateRoom(room, number, floor, rent); viewModel.closeEditRoomDialog() }
         )
@@ -306,17 +309,32 @@ private fun EditPropertyDialog(property: com.rms.app.core.model.entities.Propert
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun EditRoomDialog(room: com.rms.app.core.model.entities.Room, onDismiss: () -> Unit, onSave: (String, String, Double) -> Unit) {
+private fun EditRoomDialog(
+    room: com.rms.app.core.model.entities.Room, 
+    properties: List<com.rms.app.core.model.entities.Property>,
+    onDismiss: () -> Unit, 
+    onSave: (String, String, Double) -> Unit
+) {
     var roomNumber by remember { mutableStateOf(room.roomNumber) }
     var floor by remember { mutableStateOf(room.floor) }
     var rent by remember { mutableStateOf(if (room.monthlyRent > 0) room.monthlyRent.toInt().toString() else "") }
+    val associatedProperty = properties.find { it.id == room.propertyId }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Edit Room") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = associatedProperty?.name ?: "Unknown Property", 
+                    onValueChange = {}, 
+                    label = { Text("Parent Property") }, 
+                    singleLine = true,
+                    readOnly = true,
+                    enabled = false
+                )
                 OutlinedTextField(value = roomNumber, onValueChange = { roomNumber = it }, label = { Text("Room Number") }, singleLine = true)
                 OutlinedTextField(value = floor, onValueChange = { floor = it }, label = { Text("Floor") }, singleLine = true)
                 OutlinedTextField(value = rent, onValueChange = { rent = it }, label = { Text("Monthly Rent (₹)") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
@@ -422,6 +440,7 @@ private fun AddPropertyDialog(onDismiss: () -> Unit, onAdd: (String, String) -> 
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AddRoomDialog(
     properties: List<com.rms.app.core.model.entities.Property>,
@@ -431,22 +450,64 @@ private fun AddRoomDialog(
     var roomNumber by remember { mutableStateOf("") }
     var floor by remember { mutableStateOf("") }
     var rent by remember { mutableStateOf("") }
-    val propertyId = properties.firstOrNull()?.id ?: 0L
+    var propertyId by remember { mutableStateOf(properties.firstOrNull()?.id ?: 0L) }
+    var dropdownExpanded by remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Add Room") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedTextField(value = roomNumber, onValueChange = { roomNumber = it }, label = { Text("Room Number") }, singleLine = true)
-                OutlinedTextField(value = floor, onValueChange = { floor = it }, label = { Text("Floor") }, singleLine = true)
-                OutlinedTextField(value = rent, onValueChange = { rent = it }, label = { Text("Monthly Rent (₹)") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+                if (properties.size > 1) {
+                    ExposedDropdownMenuBox(
+                        expanded = dropdownExpanded,
+                        onExpandedChange = { dropdownExpanded = it }
+                    ) {
+                        val selectedProp = properties.find { it.id == propertyId }
+                        OutlinedTextField(
+                            value = selectedProp?.name ?: "",
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Select Property") },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = dropdownExpanded) },
+                            modifier = Modifier.fillMaxWidth().menuAnchor()
+                        )
+                        ExposedDropdownMenu(
+                            expanded = dropdownExpanded,
+                            onDismissRequest = { dropdownExpanded = false }
+                        ) {
+                            properties.forEach { prop ->
+                                DropdownMenuItem(
+                                    text = { Text(prop.name) },
+                                    onClick = {
+                                        propertyId = prop.id
+                                        dropdownExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    OutlinedTextField(
+                        value = properties.firstOrNull()?.name ?: "No Property",
+                        onValueChange = {},
+                        label = { Text("Parent Property") },
+                        singleLine = true,
+                        readOnly = true,
+                        enabled = false,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                OutlinedTextField(value = roomNumber, onValueChange = { roomNumber = it }, label = { Text("Room Number") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = floor, onValueChange = { floor = it }, label = { Text("Floor") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = rent, onValueChange = { rent = it }, label = { Text("Monthly Rent (₹)") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
             }
         },
         confirmButton = {
             Button(
                 onClick = { onAdd(propertyId, roomNumber, floor, rent.toDoubleOrNull() ?: 0.0); onDismiss() },
-                enabled = roomNumber.isNotBlank()
+                enabled = roomNumber.isNotBlank() && propertyId != 0L
             ) { Text("Add") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
