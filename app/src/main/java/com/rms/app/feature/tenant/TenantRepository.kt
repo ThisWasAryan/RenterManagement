@@ -68,8 +68,23 @@ class TenantRepository @Inject constructor(
     suspend fun insertPayment(payment: Payment): Long =
         paymentDao.insertPayment(payment)
 
-    suspend fun markElectricityPaid(readingId: Long, paidDate: Long, mode: String) =
+    suspend fun markElectricityPaid(readingId: Long, paidDate: Long, mode: String) {
         electricityReadingDao.markAsPaidWithDetails(readingId, paidDate, mode)
+        val reading = electricityReadingDao.getReadingById(readingId)
+        if (reading != null && reading.totalAmount > 0) {
+            val payment = Payment(
+                tenantId = reading.tenantId,
+                amount = reading.totalAmount,
+                type = "ELECTRICITY",
+                mode = mode,
+                paymentDate = paidDate,
+                forMonth = reading.forMonth,
+                forYear = reading.forYear,
+                notes = "Electricity Payment for ${reading.previousReading.toInt()} -> ${reading.currentReading.toInt()} units"
+            )
+            paymentDao.insertPayment(payment)
+        }
+    }
 
     suspend fun insertDocument(document: Document): Long =
         documentDao.insertDocument(document)

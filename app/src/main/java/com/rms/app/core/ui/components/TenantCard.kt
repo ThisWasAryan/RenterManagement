@@ -216,7 +216,7 @@ fun TenantCard(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 QuickActionButton(
-                    text = "Record Rent",
+                    text = "Record Payment",
                     icon = Icons.Outlined.Payment,
                     onClick = onRecordRent,
                     modifier = Modifier.weight(1f)

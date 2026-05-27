@@ -58,8 +58,10 @@ RMS is a native Android application built with modern architecture components an
 - **Preferences:** Jetpack DataStore (Preferences)
 - **Image/Document Handling:** Coil (for image loading/caching) and Android `ContentResolver` (for local URI persistence)
 
-### V3.1 Improvements (Tenant & Room Rent Sync)
+### V3.1 Improvements (Smart Payments & Sync)
 - **Intelligent Synchronization:** Introduced two-way synchronization dialogs. Whether you edit a Room's default rent or a specific Tenant's active rent, the app detects discrepancies and optionally allows you to synchronize the changes across both layers or keep them isolated as override pricing.
+- **Smart Payment Workflow:** Replaced the rigid "Record Rent" button with an intelligent "Record Payment" orchestrator on the Home Screen. The app now detects whether rent, electricity, or both are due, and intelligently routes the landlord to the correct payment sheet or action selector.
+- **Global Ledger & Dashboard Aggregation:** Electricity dues and payments are now fully integrated into the global cash flow ledger. The dashboard's "Amount Pending" reflects total liability (rent + electricity), and all marked electricity payments automatically reflect in the "Amount Collected" and the Payments history tab.
 
 ### V3.0 Stable Improvements
 Version 3 finalizes the core workflows to ensure the app is highly robust for real-world deployments:
