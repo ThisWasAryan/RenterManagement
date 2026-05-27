@@ -29,4 +29,7 @@ interface RoomDao {
 
     @Query("UPDATE rooms SET status = :status WHERE id = :roomId")
     suspend fun updateRoomStatus(roomId: Long, status: String)
+
+    @Query("SELECT COUNT(*) FROM rooms WHERE propertyId = :propertyId")
+    suspend fun getRoomsCountForProperty(propertyId: Long): Int
 }

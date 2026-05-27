@@ -13,11 +13,11 @@ import javax.inject.Inject
 
 data class DocumentsUiState(
     val isLoading: Boolean = true,
-    val documents: List<Document> = emptyList(),
+    val documents: List<com.rms.app.core.model.relations.DocumentWithContext> = emptyList(),
     val tenants: List<Tenant> = emptyList(),
-    val agreements: List<Document> = emptyList(),
-    val idDocuments: List<Document> = emptyList(),
-    val meterPhotos: List<Document> = emptyList(),
+    val agreements: List<com.rms.app.core.model.relations.DocumentWithContext> = emptyList(),
+    val idDocuments: List<com.rms.app.core.model.relations.DocumentWithContext> = emptyList(),
+    val meterPhotos: List<com.rms.app.core.model.relations.DocumentWithContext> = emptyList(),
     val showUploadDialog: Boolean = false,
     val selectedTenantId: Long? = null,
     val selectedDocType: DocumentType = DocumentType.OTHER,
@@ -40,21 +40,21 @@ class DocumentsViewModel @Inject constructor(
 
     private fun loadDocuments() {
         viewModelScope.launch {
-            documentRepository.getAllDocuments().collect { docs ->
+            documentRepository.getAllDocumentsWithContext().collect { docs ->
                 _uiState.update {
                     it.copy(
                         isLoading = false,
                         documents = docs,
-                        agreements = docs.filter { d -> d.documentType == DocumentType.AGREEMENT.name },
+                        agreements = docs.filter { d -> d.document.documentType == DocumentType.AGREEMENT.name },
                         idDocuments = docs.filter { d ->
-                            d.documentType in listOf(
+                            d.document.documentType in listOf(
                                 DocumentType.AADHAAR.name,
                                 DocumentType.PAN.name,
                                 DocumentType.PASSPORT.name,
                                 DocumentType.DRIVING_LICENSE.name
                             )
                         },
-                        meterPhotos = docs.filter { d -> d.documentType == DocumentType.METER_PHOTO.name }
+                        meterPhotos = docs.filter { d -> d.document.documentType == DocumentType.METER_PHOTO.name }
                     )
                 }
             }

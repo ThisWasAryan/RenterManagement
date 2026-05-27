@@ -385,6 +385,24 @@ fun AddTenantScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
         }
+
+        if (uiState.showRentSyncDialog) {
+            AlertDialog(
+                onDismissRequest = { viewModel.dismissRentSyncDialog() },
+                title = { Text("Update Room Rent?") },
+                text = { Text("This tenant's rent differs from the room's default rent.\nDo you also want to update the room's default rent?") },
+                confirmButton = {
+                    TextButton(onClick = { viewModel.confirmRentSync(updateRoom = true) }) {
+                        Text("Update Room Rent")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { viewModel.confirmRentSync(updateRoom = false) }) {
+                        Text("Keep Tenant Override")
+                    }
+                }
+            )
+        }
     }
 }
 

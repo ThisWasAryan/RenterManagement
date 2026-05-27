@@ -14,6 +14,7 @@ class DocumentRepository @Inject constructor(
     private val tenantDao: TenantDao
 ) {
     fun getAllDocuments(): Flow<List<Document>> = documentDao.getAllDocuments()
+    fun getAllDocumentsWithContext(): Flow<List<com.rms.app.core.model.relations.DocumentWithContext>> = documentDao.getAllDocumentsWithContext()
     fun getDocumentsByType(type: String): Flow<List<Document>> = documentDao.getDocumentsByType(type)
     fun getDocumentsByTenant(tenantId: Long): Flow<List<Document>> = documentDao.getDocumentsByTenant(tenantId)
     suspend fun insertDocument(document: Document): Long = documentDao.insertDocument(document)

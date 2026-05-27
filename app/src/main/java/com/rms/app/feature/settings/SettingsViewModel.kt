@@ -21,7 +21,16 @@ data class SettingsUiState(
     val properties: List<Property> = emptyList(),
     val rooms: List<Room> = emptyList(),
     val showAddPropertyDialog: Boolean = false,
-    val showAddRoomDialog: Boolean = false
+    val showAddRoomDialog: Boolean = false,
+    
+    // Edit/Delete Property
+    val showEditPropertyDialog: Property? = null,
+    
+    // Edit/Delete Room
+    val showEditRoomDialog: Room? = null,
+    val showSyncRentDialog: Pair<Room, Double>? = null, // Used when editing room rent to ask if sync is desired
+
+    val error: String? = null
 )
 
 @HiltViewModel
@@ -29,7 +38,8 @@ class SettingsViewModel @Inject constructor(
     private val dataStore: DataStore<Preferences>,
     private val themeManager: ThemeManager,
     private val propertyDao: PropertyDao,
-    private val roomDao: RoomDao
+    private val roomDao: RoomDao,
+    private val tenantDao: com.rms.app.core.database.dao.TenantDao
 ) : ViewModel() {
 
     companion object {
@@ -110,5 +120,78 @@ class SettingsViewModel @Inject constructor(
 
     fun toggleAddRoomDialog() {
         _uiState.update { it.copy(showAddRoomDialog = !it.showAddRoomDialog) }
+    }
+
+    // Property Editing & Deletion
+    fun openEditPropertyDialog(property: Property) {
+        _uiState.update { it.copy(showEditPropertyDialog = property) }
+    }
+    
+    fun closeEditPropertyDialog() {
+        _uiState.update { it.copy(showEditPropertyDialog = null) }
+    }
+
+    fun updateProperty(property: Property, newName: String, newAddress: String) {
+        viewModelScope.launch {
+            propertyDao.updateProperty(property.copy(name = newName, address = newAddress))
+        }
+    }
+
+    fun deleteProperty(property: Property) {
+        viewModelScope.launch {
+            val count = roomDao.getRoomsCountForProperty(property.id)
+            if (count > 0) {
+                _uiState.update { it.copy(error = "Cannot delete property. It contains $count rooms. Please delete or reassign rooms first.") }
+            } else {
+                propertyDao.deleteProperty(property)
+            }
+        }
+    }
+
+    // Room Editing & Deletion
+    fun openEditRoomDialog(room: Room) {
+        _uiState.update { it.copy(showEditRoomDialog = room) }
+    }
+    
+    fun closeEditRoomDialog() {
+        _uiState.update { it.copy(showEditRoomDialog = null) }
+    }
+
+    fun updateRoom(room: Room, newRoomNumber: String, newFloor: String, newRent: Double) {
+        viewModelScope.launch {
+            val updatedRoom = room.copy(roomNumber = newRoomNumber, floor = newFloor, monthlyRent = newRent)
+            roomDao.updateRoom(updatedRoom)
+            
+            if (room.monthlyRent != newRent) {
+                // Ask user if they want to sync rent
+                _uiState.update { it.copy(showSyncRentDialog = Pair(updatedRoom, newRent)) }
+            }
+        }
+    }
+
+    fun deleteRoom(room: Room) {
+        viewModelScope.launch {
+            val count = tenantDao.getActiveTenantsCountForRoom(room.id)
+            if (count > 0) {
+                _uiState.update { it.copy(error = "Cannot delete room. It has $count active tenants assigned to it.") }
+            } else {
+                roomDao.deleteRoom(room)
+            }
+        }
+    }
+    
+    fun closeSyncRentDialog(sync: Boolean) {
+        val dialogState = _uiState.value.showSyncRentDialog
+        _uiState.update { it.copy(showSyncRentDialog = null) }
+        
+        if (sync && dialogState != null) {
+            viewModelScope.launch {
+                tenantDao.updateRentForActiveTenantsInRoom(dialogState.first.id, dialogState.second)
+            }
+        }
+    }
+    
+    fun clearError() {
+        _uiState.update { it.copy(error = null) }
     }
 }

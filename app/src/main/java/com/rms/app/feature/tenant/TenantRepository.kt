@@ -62,6 +62,9 @@ class TenantRepository @Inject constructor(
     suspend fun getRoomById(roomId: Long): Room? =
         roomDao.getRoomById(roomId)
 
+    suspend fun updateRoom(room: Room) =
+        roomDao.updateRoom(room)
+
     suspend fun insertPayment(payment: Payment): Long =
         paymentDao.insertPayment(payment)
 

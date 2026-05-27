@@ -58,9 +58,12 @@ RMS is a native Android application built with modern architecture components an
 - **Preferences:** Jetpack DataStore (Preferences)
 - **Image/Document Handling:** Coil (for image loading/caching) and Android `ContentResolver` (for local URI persistence)
 
-### V3 Stable Improvements
+### V3.1 Improvements (Tenant & Room Rent Sync)
+- **Intelligent Synchronization:** Introduced two-way synchronization dialogs. Whether you edit a Room's default rent or a specific Tenant's active rent, the app detects discrepancies and optionally allows you to synchronize the changes across both layers or keep them isolated as override pricing.
+
+### V3.0 Stable Improvements
 Version 3 finalizes the core workflows to ensure the app is highly robust for real-world deployments:
-- **Billing Engine Overhaul:** Reworked rent calculations from arbitrary calendar-month validations to true elapsed billing cycles using `DateUtils` utilities spanning off the tenant's `moveInDate`. 
+- **Billing Engine Overhaul:** Reworked rent calculations from arbitrary calendar-month validations to true elapsed billing cycles using `DateUtils` utilities spanning off the tenant's `moveInDate`.  
 - **Instant Reactive UI:** Upgraded Compose `LaunchedEffect` hooks and Flow combiners in ViewModels (like `HomeViewModel`) to instantly refresh summary metrics and lists without requiring a restart.
 - **UI State Protections:** Implemented strict ViewModel rules to enforce correct UI states (e.g., locking out the "Record Payment" bottom sheet if advance cycles are fully paid, preventing overpayment).
 - **Advanced Template System:** Enhanced the `WhatsAppHelper` integration to dynamically resolve deep variables (like `{previousReading}` and `{currentReading}`) before firing intents.
