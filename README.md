@@ -74,6 +74,7 @@ The project has matured significantly across major iterations to reach its curre
 * **V1:** Initial UI foundation. Established the basic Compose architecture and early tenant management capabilities.
 * **V2:** Workflow completion. Introduced relational payment systems, the electricity calculation logic, raw document uploads, and the WhatsApp integration system.
 * **V3:** Operational polish and stability. Implemented smart payment workflows, heavily organized the document filing system, enforced room/property relationship consistency, introduced a reactive dashboard, and finalized production-level landlord workflows.
+* **v3.1** It is a major refinement and stabilization update focused on operational correctness, workflow polish, dashboard accuracy, and long-term landlord usability.
 
 ---
 
@@ -98,7 +99,7 @@ The project has matured significantly across major iterations to reach its curre
 ### APK Installation
 For landlords looking to use the app immediately without building from source:
 1. Navigate to the **Releases** section on this GitHub repository.
-2. Download the `RMS-v3-stable.apk` file.
+2. Download the `RMS-v3.1-stable.apk` file.
 3. Transfer the file to your Android device and install it (ensure "Install from Unknown Sources" is enabled in your device settings).
 
 ---
@@ -108,8 +109,6 @@ For landlords looking to use the app immediately without building from source:
 - Deep financial analytics, charts, and yearly income/expense reporting.
 - PDF Receipt Generation for tenants.
 
-## License
-This project is licensed under the MIT License - see the LICENSE file for details.
 
 ---
 *Made with ❤️ by Aryan Raj*
