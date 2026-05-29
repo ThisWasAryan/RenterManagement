@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RMS — Rent Management System</title>
+  <meta name="description" content="An open source Android application for landlords and property managers. Manage tenants, rent, electricity billing, documents, and WhatsApp reminders — all offline." />
+  <meta property="og:title" content="RMS — Rent Management System" />
+  <meta property="og:description" content="Open source Android app for landlords. Manage tenants, payments, electricity, and documents — fully offline." />
+  <meta property="og:type" content="website" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300;1,9..40,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav class="nav" id="nav">
+    <div class="nav-inner">
+      <a href="#" class="nav-logo" aria-label="RMS Home">
+        <div class="nav-logo-icon" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+        </div>
+        <span class="nav-logo-text">RMS</span>
+      </a>
+      <div class="nav-links">
+        <a href="#features" class="nav-link">Features</a>
+        <a href="#walkthrough" class="nav-link">Walkthrough</a>
+        <a href="https://github.com/ThisWasAryan/RenterManagement" target="_blank" rel="noopener" class="nav-btn nav-btn-ghost">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+          </svg>
+          Star on GitHub
+        </a>
+        <a href="https://github.com/ThisWasAryan/RenterManagement/releases/latest" target="_blank" rel="noopener" class="nav-btn nav-btn-primary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          Download APK
+        </a>
+      </div>
+      <button class="nav-hamburger" id="hamburger" aria-label="Open menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+    <div class="nav-mobile-menu" id="mobile-menu" aria-hidden="true">
+      <a href="#features" class="mobile-link">Features</a>
+      <a href="#walkthrough" class="mobile-link">Walkthrough</a>
+      <a href="https://github.com/ThisWasAryan/RenterManagement" target="_blank" rel="noopener" class="mobile-link">GitHub Repository</a>
+      <a href="https://github.com/ThisWasAryan/RenterManagement/releases/latest" target="_blank" rel="noopener" class="mobile-link mobile-link-accent">Download APK</a>
+    </div>
+  </nav>
+
+  <main>
+
+    <!-- HERO -->
+    <section class="hero" id="hero">
+      <div class="hero-bg-grid" aria-hidden="true"></div>
+      <div class="hero-bg-fade" aria-hidden="true"></div>
+      <div class="container">
+        <div class="hero-inner">
+          <div class="hero-content" data-reveal>
+            <div class="hero-badge">
+              <span class="badge-dot" aria-hidden="true"></span>
+              v3.1 — Stable Release
+            </div>
+            <h1 class="hero-title">
+              Rent Management<br />
+              <span class="hero-title-muted">for the real world.</span>
+            </h1>
+            <p class="hero-desc">
+              An open source Android application built for landlords and property managers.
+              Manage tenants, track rent cycles, calculate electricity bills, organize documents,
+              and send WhatsApp reminders — all offline, all on your device.
+            </p>
+            <div class="hero-tags" aria-label="Key capabilities">
+              <span class="tag">Tenant Management</span>
+              <span class="tag">Rent Tracking</span>
+              <span class="tag">Electricity Billing</span>
+              <span class="tag">Document Storage</span>
+              <span class="tag">WhatsApp Reminders</span>
+              <span class="tag">Offline-First</span>
+            </div>
+            <div class="hero-actions">
+              <a href="https://github.com/ThisWasAryan/RenterManagement/releases/latest" target="_blank" rel="noopener" class="btn btn-primary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/>
+                  <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                Download APK
+              </a>
+              <a href="https://github.com/ThisWasAryan/RenterManagement" target="_blank" rel="noopener" class="btn btn-ghost">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                </svg>
+                View on GitHub
+              </a>
+            </div>
+            <div class="hero-meta">
+              <span class="meta-item">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                Android 8.0+
+              </span>
+              <span class="meta-sep" aria-hidden="true">·</span>
+              <span class="meta-item">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                GPL v3 Licensed
+              </span>
+              <span class="meta-sep" aria-hidden="true">·</span>
+              <span class="meta-item">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                100% Kotlin
+              </span>
+            </div>
+          </div>
+
+          <div class="hero-phones" data-reveal data-reveal-delay="200" aria-label="App screenshots">
+            <div class="phone-wrap phone-wrap-back">
+              <div class="phone-frame">
+                <div class="phone-screen">
+                  <img src="assets/screenshots/screen-tenants.png" alt="Tenants screen of RMS app" class="phone-img" loading="eager" />
+                  <div class="phone-placeholder" aria-hidden="true">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+                      <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                    </svg>
+                    <span>Tenants Screen</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="phone-wrap phone-wrap-front">
+              <div class="phone-frame">
+                <div class="phone-screen">
+                  <img src="assets/screenshots/screen-dashboard.png" alt="Dashboard screen of RMS app" class="phone-img" loading="eager" />
+                  <div class="phone-placeholder" aria-hidden="true">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+                      <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+                      <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+                    </svg>
+                    <span>Dashboard</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- STATS STRIP -->
+    <div class="stats-strip" data-reveal>
+      <div class="container">
+        <div class="stats-inner">
+          <div class="stat-item">
+            <span class="stat-num">5</span>
+            <span class="stat-label">Core Screens</span>
+          </div>
+          <div class="stat-divider" aria-hidden="true"></div>
+          <div class="stat-item">
+            <span class="stat-num">v3.1</span>
+            <span class="stat-label">Current Version</span>
+          </div>
+          <div class="stat-divider" aria-hidden="true"></div>
+          <div class="stat-item">
+            <span class="stat-num">API 26+</span>
+            <span class="stat-label">Android 8.0 Oreo</span>
+          </div>
+          <div class="stat-divider" aria-hidden="true"></div>
+          <div class="stat-item">
+            <span class="stat-num">100%</span>
+            <span class="stat-label">Offline Operation</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRODUCT WALKTHROUGH -->
+    <section class="walkthrough" id="walkthrough">
+      <div class="container">
+        <div class="section-header" data-reveal>
+          <p class="section-eyebrow">Product Walkthrough</p>
+          <h2 class="section-title">Everything a landlord needs,<br />nothing they don't.</h2>
+        </div>
+
+        <!-- Walk 1: Dashboard -->
+        <div class="walk-row" data-reveal>
+          <div class="walk-phone">
+            <div class="phone-frame phone-large">
+              <div class="phone-screen">
+                <img src="assets/screenshots/screen-dashboard.png" alt="RMS Home Dashboard showing pending dues and collected amounts" class="phone-img" />
+                <div class="phone-placeholder" aria-hidden="true">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
+                    <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+                    <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+                  </svg>
+                  <span>Home Dashboard</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="walk-content">
+            <div class="walk-num" aria-hidden="true">01</div>
+            <h3 class="walk-title">Home Dashboard</h3>
+            <p class="walk-desc">
+              Your financial command center. The moment you open RMS, you see exactly who owes what — rent, electricity, or both — with zero digging.
+            </p>
+            <ul class="walk-list" role="list">
+              <li>
+                <div class="walk-icon" aria-hidden="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                Real-time "Amount Pending" combining rent and electricity dues
+              </li>
+              <li>
+                <div class="walk-icon" aria-hidden="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                "Amount Collected" updated instantly on every payment
+              </li>
+              <li>
+                <div class="walk-icon" aria-hidden="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                Smart routing — tap a tenant to record the exact right payment
+              </li>
+              <li>
+                <div class="walk-icon" aria-hidden="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                One-tap WhatsApp reminder from any pending due
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Walk 2: Payments -->
+        <div class="walk-row walk-row-reverse" data-reveal>
+          <div class="walk-phone">
+            <div class="phone-frame phone-large">
+              <div class="phone-screen">
+                <img src="assets/screenshots/screen-payments.png" alt="RMS Payments screen showing rent and electricity ledger" class="phone-img" />
+                <div class="phone-placeholder" aria-hidden="true">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
+                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                    <line x1="1" y1="10" x2="23" y2="10"/>
+                  </svg>
+                  <span>Payments & Ledger</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="walk-content">
+            <div class="walk-num" aria-hidden="true">02</div>
+            <h3 class="walk-title">Payments & Ledger</h3>
+            <p class="walk-desc">
+              A complete payment history per tenant, with intelligent billing cycle detection. Handles partial payments, advances, and multiple methods without confusion.
+            </p>
+            <ul class="walk-list" role="list">
+              <li>
+                <div class="walk-icon" aria-hidden="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                Move-in date anchored billing cycles — always accurate
+              </li>
+              <li>
+                <div class="walk-icon" aria-hidden="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                Partial payment support with pending balance tracking
+              </li>
+              <li>
+                <div class="walk-icon" aria-hidden="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                Cash, UPI, Bank Transfer, Cheque — all recorded
+              </li>
+              <li>
+                <div class="walk-icon" aria-hidden="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                Electricity readings, consumption, and billing in one flow
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Walk 3: Documents -->
+        <div class="walk-row" data-reveal>
+          <div class="walk-phone">
+            <div class="phone-frame phone-large">
+              <div class="phone-screen">
+                <img src="assets/screenshots/screen-documents.png" alt="RMS Documents screen showing organized tenant documents" class="phone-img" />
+                <div class="phone-placeholder" aria-hidden="true">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                    <polyline points="10 9 9 9 8 9"/>
+                  </svg>
+                  <span>Document Cabinet</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="walk-content">
+            <div class="walk-num" aria-hidden="true">03</div>
+            <h3 class="walk-title">Document Cabinet</h3>
+            <p class="walk-desc">
+              A structured filing cabinet for every document tied to your properties and tenants — no more hunting through WhatsApp for a photo of an Aadhaar card.
+            </p>
+            <ul class="walk-list" role="list">
+              <li>
+                <div class="walk-icon" aria-hidden="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                Aadhaar, PAN, Passport, and Driving Licence organized by category
+              </li>
+              <li>
+                <div class="walk-icon" aria-hidden="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                Rental agreements and payment receipts filed per tenant
+              </li>
+              <li>
+                <div class="walk-icon" aria-hidden="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                Upload directly from camera or gallery
+              </li>
+              <li>
+                <div class="walk-icon" aria-hidden="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                Navigate documents by tenant name or category
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Walk 4: Settings -->
+        <div class="walk-row walk-row-reverse" data-reveal>
+          <div class="walk-phone">
+            <div class="phone-frame phone-large">
+              <div class="phone-screen">
+                <img src="assets/screenshots/screen-settings.png" alt="RMS Settings screen showing property and room configuration" class="phone-img" />
+                <div class="phone-placeholder" aria-hidden="true">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                  </svg>
+                  <span>Settings</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="walk-content">
+            <div class="walk-num" aria-hidden="true">04</div>
+            <h3 class="walk-title">Settings & Configuration</h3>
+            <p class="walk-desc">
+              Full control over your properties, rooms, and messaging — all in one place. Create your property hierarchy once, then let the app handle the bookkeeping.
+            </p>
+            <ul class="walk-list" role="list">
+              <li>
+                <div class="walk-icon" aria-hidden="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                Add, edit, and delete properties and rooms with validation
+              </li>
+              <li>
+                <div class="walk-icon" aria-hidden="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                Configurable per-unit electricity rates per property
+              </li>
+              <li>
+                <div class="walk-icon" aria-hidden="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                Customize WhatsApp reminder templates with dynamic placeholders
+              </li>
+              <li>
+                <div class="walk-icon" aria-hidden="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                Database management and safe data export tools
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- WHATSAPP HIGHLIGHT -->
+    <section class="whatsapp-section" data-reveal>
+      <div class="container">
+        <div class="whatsapp-card">
+          <div class="whatsapp-content">
+            <div class="whatsapp-icon-wrap" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+              </svg>
+            </div>
+            <div>
+              <h3 class="whatsapp-title">Smart WhatsApp Reminders</h3>
+              <p class="whatsapp-desc">
+                Reminder templates built for landlords. Send contextual messages with accurate pending amounts, meter readings, and billing cycles — in one tap, no manual editing.
+              </p>
+            </div>
+          </div>
+          <div class="whatsapp-types" role="list" aria-label="Reminder types">
+            <div class="wtype" role="listitem">
+              <div class="wtype-dot wtype-dot-rent" aria-hidden="true"></div>
+              Rent Reminder
+            </div>
+            <div class="wtype" role="listitem">
+              <div class="wtype-dot wtype-dot-elec" aria-hidden="true"></div>
+              Electricity Reminder
+            </div>
+            <div class="wtype" role="listitem">
+              <div class="wtype-dot wtype-dot-both" aria-hidden="true"></div>
+              Combined Reminder
+            </div>
+            <div class="wtype" role="listitem">
+              <div class="wtype-dot wtype-dot-confirm" aria-hidden="true"></div>
+              Payment Confirmation
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FEATURES GRID -->
+    <section class="features" id="features">
+      <div class="container">
+        <div class="section-header" data-reveal>
+          <p class="section-eyebrow">Built Right</p>
+          <h2 class="section-title">Every feature built for<br />practical landlord use.</h2>
+        </div>
+        <div class="features-grid" role="list">
+
+          <div class="feature-card" data-reveal role="listitem">
+            <div class="feature-icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
+            </div>
+            <h3 class="feature-title">Tenant Management</h3>
+            <p class="feature-desc">Full tenant profiles with room assignments, move-in dates, deposit records, and payment history. Active and past tenants tracked separately.</p>
+          </div>
+
+          <div class="feature-card" data-reveal role="listitem">
+            <div class="feature-icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                <polyline points="9 22 9 12 15 12 15 22"/>
+              </svg>
+            </div>
+            <h3 class="feature-title">Property Management</h3>
+            <p class="feature-desc">Hierarchical property and room structures. Add floor numbers, notes, and addresses. Rooms enforce single-occupancy to prevent double-booking.</p>
+          </div>
+
+          <div class="feature-card" data-reveal role="listitem">
+            <div class="feature-icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+                <line x1="12" y1="1" x2="12" y2="23"/>
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+              </svg>
+            </div>
+            <h3 class="feature-title">Smart Rent Tracking</h3>
+            <p class="feature-desc">Billing cycles anchored to the tenant's move-in date. Handles partial payments, one-month advances, and multiple payment entries per cycle.</p>
+          </div>
+
+          <div class="feature-card" data-reveal role="listitem">
+            <div class="feature-icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+              </svg>
+            </div>
+            <h3 class="feature-title">Electricity Billing</h3>
+            <p class="feature-desc">Track meter readings per room. Automatic consumption calculation at a configurable per-unit rate. Electricity dues aggregate into the global pending dashboard.</p>
+          </div>
+
+          <div class="feature-card" data-reveal role="listitem">
+            <div class="feature-icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+              </svg>
+            </div>
+            <h3 class="feature-title">WhatsApp Reminders</h3>
+            <p class="feature-desc">Fully dynamic templates with auto-populated tenant name, pending amount, billing cycles, and electricity details. No copy-pasting needed.</p>
+          </div>
+
+          <div class="feature-card" data-reveal role="listitem">
+            <div class="feature-icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+              </svg>
+            </div>
+            <h3 class="feature-title">Document Storage</h3>
+            <p class="feature-desc">Categorized filing for ID documents, rental agreements, and receipts. Each document linked directly to its tenant for immediate retrieval.</p>
+          </div>
+
+          <div class="feature-card" data-reveal role="listitem">
+            <div class="feature-icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M8.56 2.75c4.37 6.03 6.02 9.42 8.03 17.72m2.54-15.38c-3.72 4.35-8.94 5.66-16.88 5.85m19.5 1.9c-3.5-.93-6.63-.82-8.94 0-2.58.92-5.01 2.86-7.44 6.32"/>
+              </svg>
+            </div>
+            <h3 class="feature-title">Material Design 3</h3>
+            <p class="feature-desc">Built with Jetpack Compose following MD3 guidelines. Clean, consistent, and fast — every interaction designed for one-handed mobile use.</p>
+          </div>
+
+          <div class="feature-card" data-reveal role="listitem">
+            <div class="feature-icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+                <path d="M1 6v16l7-4 8 4 7-4V2l-7 4-8-4-7 4z"/>
+                <line x1="8" y1="2" x2="8" y2="18"/>
+                <line x1="16" y1="6" x2="16" y2="22"/>
+              </svg>
+            </div>
+            <h3 class="feature-title">Offline-First</h3>
+            <p class="feature-desc">Zero network dependency. All data lives in a local Room (SQLite) database. Instant loads, total privacy, and works perfectly without internet.</p>
+          </div>
+
+          <div class="feature-card feature-card-accent" data-reveal role="listitem">
+            <div class="feature-icon feature-icon-accent" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+                <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
+              </svg>
+            </div>
+            <h3 class="feature-title">Open Source</h3>
+            <p class="feature-desc">Licensed under GPL v3. Audit the code, report issues, or fork it for your own use. Full source available on GitHub.</p>
+            <a href="https://github.com/ThisWasAryan/RenterManagement" target="_blank" rel="noopener" class="feature-link" aria-label="View source on GitHub">
+              View Source
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+                <line x1="5" y1="12" x2="19" y2="12"/>
+                <polyline points="12 5 19 12 12 19"/>
+              </svg>
+            </a>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- TECH STACK -->
+    <section class="tech-section" data-reveal>
+      <div class="container">
+        <div class="tech-card">
+          <div class="tech-header">
+            <p class="section-eyebrow">Technology</p>
+            <h2 class="tech-title">Built on a solid Android foundation.</h2>
+          </div>
+          <div class="tech-grid" role="list" aria-label="Technology stack">
+            <div class="tech-item" role="listitem">
+              <span class="tech-name">Kotlin</span>
+              <span class="tech-role">100% native language</span>
+            </div>
+            <div class="tech-item" role="listitem">
+              <span class="tech-name">Jetpack Compose</span>
+              <span class="tech-role">Declarative UI</span>
+            </div>
+            <div class="tech-item" role="listitem">
+              <span class="tech-name">Room Database</span>
+              <span class="tech-role">SQLite abstraction</span>
+            </div>
+            <div class="tech-item" role="listitem">
+              <span class="tech-name">Hilt / Dagger</span>
+              <span class="tech-role">Dependency injection</span>
+            </div>
+            <div class="tech-item" role="listitem">
+              <span class="tech-name">Coroutines</span>
+              <span class="tech-role">Async data flow</span>
+            </div>
+            <div class="tech-item" role="listitem">
+              <span class="tech-name">MVVM</span>
+              <span class="tech-role">Architecture pattern</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta-section" data-reveal>
+      <div class="container">
+        <div class="cta-inner">
+          <div class="cta-bg-accent" aria-hidden="true"></div>
+          <h2 class="cta-title">Stop managing rent in a notebook.</h2>
+          <p class="cta-desc">Download the APK and get running in minutes. No account, no cloud, no subscription.</p>
+          <div class="cta-actions">
+            <a href="https://github.com/ThisWasAryan/RenterManagement/releases/latest" target="_blank" rel="noopener" class="btn btn-primary btn-lg">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              Download RMS v3.1
+            </a>
+            <a href="https://github.com/ThisWasAryan/RenterManagement" target="_blank" rel="noopener" class="btn btn-ghost btn-lg">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+              </svg>
+              Browse Source Code
+            </a>
+          </div>
+          <p class="cta-note">
+            Enable "Install from Unknown Sources" in your Android settings before installing the APK.
+          </p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-inner">
+        <div class="footer-brand">
+          <div class="nav-logo">
+            <div class="nav-logo-icon" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                <polyline points="9 22 9 12 15 12 15 22"/>
+              </svg>
+            </div>
+            <span class="nav-logo-text">RMS</span>
+          </div>
+          <p class="footer-tagline">Rent Management System — an offline-first landlord tool for Android.</p>
+          <p class="footer-credit">Made with care by <a href="https://github.com/ThisWasAryan" target="_blank" rel="noopener" class="footer-link">Aryan Raj</a></p>
+        </div>
+        <div class="footer-links-col">
+          <p class="footer-col-title">Project</p>
+          <a href="https://github.com/ThisWasAryan/RenterManagement" target="_blank" rel="noopener" class="footer-link">GitHub Repository</a>
+          <a href="https://github.com/ThisWasAryan/RenterManagement/releases/latest" target="_blank" rel="noopener" class="footer-link">Latest Release</a>
+          <a href="https://github.com/ThisWasAryan/RenterManagement/issues" target="_blank" rel="noopener" class="footer-link">Report an Issue</a>
+        </div>
+        <div class="footer-links-col">
+          <p class="footer-col-title">Legal</p>
+          <a href="https://github.com/ThisWasAryan/RenterManagement/blob/main/LICENSE" target="_blank" rel="noopener" class="footer-link">GPL v3 License</a>
+          <a href="https://github.com/ThisWasAryan" target="_blank" rel="noopener" class="footer-link">Developer Profile</a>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p class="footer-copy">© 2025 Aryan Raj. Open source under GPL v3.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="assets/script.js"></script>
+</body>
+</html>
