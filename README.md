@@ -20,23 +20,3 @@ rms-landing/
         └── screen-settings.png    ← Settings screen (walkthrough §4)
 ```
 
-## Deploying to GitHub Pages
-
-1. Create a new repository (e.g. `rms-landing`) or use your existing `RenterManagement` repo.
-2. Push all files in this folder to the `main` (or `gh-pages`) branch.
-3. In the repository settings → Pages → set source to `main` branch, `/ (root)` folder.
-4. Add your screenshots to `assets/screenshots/` following the naming scheme in `assets/screenshots/README.md`.
-
-The site works immediately even without screenshots — placeholder boxes display until images are added.
-
-## Screenshot Names
-
-| File                       | Screen                |
-|----------------------------|-----------------------|
-| `screen-dashboard.png`     | Home Dashboard        |
-| `screen-tenants.png`       | Tenants list/detail   |
-| `screen-payments.png`      | Payments & Ledger     |
-| `screen-documents.png`     | Document Cabinet      |
-| `screen-settings.png`      | Settings              |
-
-All screenshots should be portrait 9:16 (e.g. 1080×1920).
